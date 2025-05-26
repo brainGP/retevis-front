@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -28,15 +29,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <meta
-        name="google-site-verification"
-        content="nWxsj2YVieYZPW8U8CXGojl4mRk5ii9knhDp4KWZiNc"
-      />
-      <body className="bg-gray/[2%]">
+    <html lang="en" className="overflow-x-hidden">
+      <head>
+        <meta
+          name="google-site-verification"
+          content="nWxsj2YVieYZPW8U8CXGojl4mRk5ii9knhDp4KWZiNc"
+        />
+      </head>
+      <body className="bg-gray/[2%] overflow-x-hidden">
         <CartProvider>
-          <Providers>{children}</Providers>
-          <Toaster />
+          <Providers>
+            <main className="w-full max-w-screen overflow-x-hidden mx-auto">
+              {children}
+            </main>
+            <Toaster />
+          </Providers>
         </CartProvider>
       </body>
     </html>
