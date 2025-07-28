@@ -107,13 +107,6 @@ const StationCard = ({ station }: { station: Product }) => {
       <div className="w-full flex justify-center lg:h-[580px]">
         <div className="flex flex-col space-y-2 w-full justify-between h-full">
           <ScrollArea className="w-full h-auto lg:h-full lg:overflow-y-auto">
-            <Image
-              src={`/Retevis/rete.svg`}
-              alt="logo"
-              height={200}
-              width={80}
-              className="object-contain hidden md:block"
-            />
             <div className="flex justify-between items-center">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray">
                 {station.name}

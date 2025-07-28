@@ -1,13 +1,15 @@
 [
   {
     "logos": [
-      { "src": "/logos/logo7.svg", "alt": "Logo 1", "name": "RETEVIS" },
-      { "src": "/logos/logo1.svg", "alt": "Logo 2", "name": "ICOM" },
-      { "src": "/logos/logo2.svg", "alt": "Logo 3", "name": "KSU7" },
-      { "src": "/logos/logo3.svg", "alt": "Logo 4", "name": "TDX" },
-      { "src": "/logos/logo4.svg", "alt": "Logo 5", "name": "TSSD" },
-      { "src": "/logos/logo5.svg", "alt": "Logo 6", "name": "TYT" },
-      { "src": "/logos/logo6.svg", "alt": "Logo 7", "name": "WLN" }
+      { "src": "/logos/logo1.svg", "alt": "Logo 1", "name": "ICOM" },
+      { "src": "/logos/logo2.svg", "alt": "Logo 2", "name": "KSU7" },
+      { "src": "/logos/logo3.svg", "alt": "Logo 3", "name": "TDX" },
+      { "src": "/logos/logo4.svg", "alt": "Logo 4", "name": "TSSD" },
+      { "src": "/logos/logo5.svg", "alt": "Logo 5", "name": "TYT" },
+      { "src": "/logos/logo6.svg", "alt": "Logo 6", "name": "WLN" },
+      { "src": "/logos/logo7.svg", "alt": "Logo 7", "name": "RETEVIS" },
+      { "src": "/logos/logo8.svg", "alt": "Logo 8", "name": "MOTOROLA" },
+      { "src": "/logos/logo9.svg", "alt": "Logo 9", "name": "KENWOOD" }
     ]
   }
 ]
