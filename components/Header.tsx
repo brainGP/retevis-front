@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Search from "./Search";
@@ -14,7 +15,6 @@ const Header: React.FC = () => {
   const [showBottomNav, setShowBottomNav] = useState(true);
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,7 +44,6 @@ const Header: React.FC = () => {
     const handleResize = () => {
       const heightDiff = originalHeight - window.innerHeight;
       const isKeyboardNowOpen = heightDiff > threshold;
-      setKeyboardOpen(isKeyboardNowOpen);
 
       if (isKeyboardNowOpen) {
         setShowBottomNav(false);
@@ -142,7 +141,7 @@ const Header: React.FC = () => {
         <button
           onClick={scrollToTop}
           aria-label="Scroll to top"
-          className="fixed bottom-20 right-5 z-40 p-3 rounded-full bg-yellow/80 shadow-lg hover:bg-yellow transition "
+          className="fixed bottom-20 right-5 z-40 p-3 rounded-full bg-yellow/80 shadow-lg hover:bg-yellow transition"
         >
           <ChevronUp className="text-white" size={24} />
         </button>
