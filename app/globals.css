@@ -48,3 +48,15 @@
   filter: brightness(0) saturate(100%) invert(49%) sepia(6%) saturate(0%)
     hue-rotate(158deg) brightness(96%) contrast(92%);
 }
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}

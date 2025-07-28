@@ -17,16 +17,17 @@ export default function ContactInfo() {
     <div className="flex flex-col items-start">
       <h2 className="text-lg font-semibold">ХОЛБОО БАРИХ</h2>
       <p
-        className="text-sm mt-2 cursor-pointer hover:scale-105 duration-300 transition hover:underline"
-        onClick={() => handleCopy("9902 1617")}
+        className="text-sm mt-2 cursor-pointer hover:scale-105 duration-300 transition hover:underline break-all whitespace-normal"
+        onClick={() => handleCopy("99021617")}
       >
-        <strong>Утас:</strong> (+976) 9902 1617
+        <strong className="block">Утас:</strong> (+976) 9902-1617
       </p>
       <p
-        className="text-sm mt-2 cursor-pointer hover:scale-105 duration-300 transition hover:underline"
+        className="text-sm mt-2 cursor-pointer hover:scale-105 duration-300 transition hover:underline break-all whitespace-normal"
         onClick={() => handleCopy("retevismongolia@gmail.com")}
       >
-        <strong>Имэйл:</strong> retevismongolia@gmail.com
+        <strong className="block">Имэйл:</strong>
+        retevismongolia@gmail.com
       </p>
     </div>
   );

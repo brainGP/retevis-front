@@ -7,22 +7,63 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Profile } from "./SkeletonDemo";
 import ShopCard from "./ShopCart";
+import { ChevronUp } from "lucide-react";
 
 const Header: React.FC = () => {
   const [visibleHeader, setVisibleHeader] = useState(true);
+  const [showBottomNav, setShowBottomNav] = useState(true);
+  const [showScrollTopBtn, setShowScrollTopBtn] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollPosition = window.scrollY;
-      setVisibleHeader(currentScrollPosition < 50);
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setShowBottomNav(false);
+      } else {
+        setShowBottomNav(true);
+      }
+
+      setVisibleHeader(currentScrollY < 50);
+
+      setShowScrollTopBtn(currentScrollY > 200);
+
+      setLastScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
+  useEffect(() => {
+    const originalHeight = window.innerHeight;
+    const threshold = 150;
+
+    const handleResize = () => {
+      const heightDiff = originalHeight - window.innerHeight;
+      const isKeyboardNowOpen = heightDiff > threshold;
+      setKeyboardOpen(isKeyboardNowOpen);
+
+      if (isKeyboardNowOpen) {
+        setShowBottomNav(false);
+      } else {
+        setShowBottomNav(true);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <>
+      {/* Mobile Header */}
       <div
         className={cn(
           "sticky top-0 z-30 w-full bg-white opacity-95 border-b transition-transform duration-300 ease-in-out md:hidden",
@@ -30,7 +71,7 @@ const Header: React.FC = () => {
         )}
       >
         <div className="px-8 py-6 pb-2 flex flex-col gap-2 w-full">
-          <div className="flex items-center justify-between ">
+          <div className="flex items-center justify-between">
             <Link href="/" className="flex-shrink-0">
               <Image
                 src="/Retevis/retevis.png"
@@ -41,7 +82,7 @@ const Header: React.FC = () => {
                 priority
               />
             </Link>
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-6 p-2">
               <ShopCard />
               <Profile />
             </div>
@@ -75,7 +116,7 @@ const Header: React.FC = () => {
                 <Search />
               </div>
 
-              <div className="flex items-center gap-12 md:gap-8 ">
+              <div className="flex items-center gap-12 md:gap-8">
                 <ShopCard />
                 <Profile />
               </div>
@@ -86,9 +127,26 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 w-full z-30 border-t bg-white shadow-md">
+      {/* Bottom Mobile Navigation */}
+      <div
+        className={cn(
+          "md:hidden fixed bottom-0 left-0 w-full z-30 border-t bg-white shadow-md transition-transform duration-300",
+          showBottomNav ? "translate-y-0" : "translate-y-full"
+        )}
+      >
         <Navigation />
       </div>
+
+      {/* Scroll To Top Button */}
+      {showScrollTopBtn && (
+        <button
+          onClick={scrollToTop}
+          aria-label="Scroll to top"
+          className="fixed bottom-20 right-5 z-40 p-3 rounded-full bg-yellow/80 shadow-lg hover:bg-yellow transition "
+        >
+          <ChevronUp className="text-white" size={24} />
+        </button>
+      )}
     </>
   );
 };

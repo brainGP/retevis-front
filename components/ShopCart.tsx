@@ -11,7 +11,7 @@ const ShopCard = () => {
 
   return (
     <div
-      className="relative cursor-pointer group text-zinc-600"
+      className="relative cursor-pointer group text-zinc-600 px-2"
       onClick={() => router.push(`/cart`)}
     >
       <div className="flex gap-2 items-center ">

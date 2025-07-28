@@ -3,7 +3,12 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Package, Smartphone, Contact } from "lucide-react";
+import {
+  Home,
+  Package,
+  Smartphone,
+  MessageCircleQuestionIcon,
+} from "lucide-react";
 
 const classNames = (...classes: string[]) => classes.filter(Boolean).join(" ");
 
@@ -27,7 +32,7 @@ const Navigation = () => {
     {
       href: "/contact",
       label: "Холбоо барих",
-      icon: <Contact size={24} />,
+      icon: <MessageCircleQuestionIcon size={24} />,
       aria: "Contact page",
     },
   ];
@@ -61,7 +66,7 @@ const Navigation = () => {
             href={item.href}
             aria-label={item.aria}
             className={classNames(
-              "flex items-center justify-center gap-2 p-4",
+              "flex items-center justify-center gap-2 py-4 px-2",
               isActive(item.href)
                 ? "text-yellow"
                 : "text-gray hover:text-yellow"

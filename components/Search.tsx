@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Product } from "@/types/Product";
 import { toast } from "sonner";
 import { getProducts } from "@/apis/products";
+import { formatPrice } from "@/utils/formatPrice";
 
 const Search = () => {
   const [query, setQuery] = useState("");
@@ -62,7 +63,7 @@ const Search = () => {
   };
 
   return (
-    <div className="relative w-full max-w-2xl text-gray py-2">
+    <div className="relative w-full max-w-2xl text-gray">
       <div className="flex w-full items-center rounded-full gap-4">
         <Input
           type="search"
@@ -71,7 +72,7 @@ const Search = () => {
           onChange={handleSearch}
           onFocus={() => setIsDropdownVisible(true)}
           onBlur={handleBlur}
-          className="px-4 h-10"
+          className="px-4 h-10 transition-all duration-300"
         />
         <Button
           type="submit"
@@ -87,17 +88,23 @@ const Search = () => {
         </Button>
       </div>
 
-      {isDropdownVisible && (
-        <div className="absolute left-0 right-0 mt-2 bg-white border border-gray rounded-lg max-h-64 shadow-lg overflow-y-auto z-10">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
-              <div
-                key={product._id}
-                className="flex items-center gap-4 px-4 py-2 hover:bg-transparent/10 h-32 cursor-pointer border-b"
-                onClick={() => router.push(`/stations/${product.name}`)}
-              >
+      <div
+        className={`absolute left-0 right-0 mt-2 bg-white border border-gray rounded-lg max-h-64 shadow-lg overflow-y-auto z-10 transition-all duration-300 transform ${
+          isDropdownVisible
+            ? "opacity-100 scale-100"
+            : "opacity-0 scale-95 pointer-events-none"
+        }`}
+      >
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product) => (
+            <div
+              key={product._id}
+              className="flex justify-between items-center px-4 py-2 hover:bg-transparent/10 h-32 cursor-pointer border-b"
+              onClick={() => router.push(`/stations/${product.name}`)}
+            >
+              <div className="flex items-center gap-4">
                 <Image
-                  src={`${product.images[0].image}`}
+                  src={product.images[0]?.image || "/placeholder.png"}
                   alt={product.name || "Product Image"}
                   width={80}
                   height={80}
@@ -111,14 +118,17 @@ const Search = () => {
                   <span className="text-xs text-gray-600">{product.style}</span>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="p-4 text-center text-sm">
-              <span>Хайлт олдсонгүй</span>
+              <div className="font-medium text-gray whitespace-nowrap mr-6">
+                {formatPrice(product.priceN)}₮
+              </div>
             </div>
-          )}
-        </div>
-      )}
+          ))
+        ) : (
+          <div className="p-4 text-center text-sm">
+            <span>Хайлт олдсонгүй</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

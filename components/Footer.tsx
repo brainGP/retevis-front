@@ -22,7 +22,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Contact Info Section */}
-          <div>
+          <div className="break-words whitespace-normal">
             <ContactInfo />
           </div>
 

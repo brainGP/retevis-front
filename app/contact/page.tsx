@@ -33,7 +33,7 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col gap-16 px-4 xl:px-16 py-8">
+    <div className="flex flex-col gap-16 px-8 xl:px-16 py-8">
       <div id="map-section" className="flex flex-col gap-4">
         <h1 className="font-medium text-xl md:text-2xl">Газрын зураг</h1>
         <div className="flex justify-center relative">
