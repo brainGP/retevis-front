@@ -2,13 +2,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { isAdmin } from "@/lib/authHelper";
-import { getCookie } from "cookies-next";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Product } from "@/types/Product";
 import ProductTable from "@/components/Products/ProductTable";
 import { LoadingError } from "@/components/LoadingError";
 import { toast } from "sonner";
+import { notifyCatalogChanged } from "@/lib/catalogCache";
 
 import Breadcrumb from "@/components/BreadCrumb";
 import { deleteProductById, getProducts } from "@/apis/products";
@@ -51,14 +51,6 @@ function AdminPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const accessToken = getCookie("accessToken");
-
-      if (!accessToken) {
-        toast.error("Нэвтрэх шаардлагатай.");
-        router.push("/login");
-        return;
-      }
-
       const isAdminUser = await isAdmin();
       if (isAdminUser) {
         setAuthorized(true);
@@ -184,13 +176,15 @@ function AdminPage() {
         setIsOpen={setIsDialogOpen}
         title="Бүтээгдэхүүн устгах"
         description="Энэ үйлдлийг буцаах боломжгүй. Та энэ бүтээгдэхүүнийг устгахдаа үнэхээр итгэлтэй байна уу?"
-        callback={() => {
-          if (productToDelete) {
-            deleteProductById({ id: productToDelete });
-            setProducts((prev) =>
-              prev.filter((product) => product._id !== productToDelete)
-            );
+        callback={async () => {
+          if (!productToDelete) return;
+          try {
+            await deleteProductById({ id: productToDelete });
+            setProducts((prev) => prev.filter((product) => product._id !== productToDelete));
+            notifyCatalogChanged();
             toast.success("Бүтээгдэхүүнийг амжилттай устгалаа.");
+          } catch {
+            toast.error("Бүтээгдэхүүнийг устгаж чадсангүй.");
           }
         }}
         actionLabel="Устгах"

@@ -2,9 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { getBanners } from "@/apis/banner";
 import { toast } from "sonner";
+import { notifyCatalogChanged } from "@/lib/catalogCache";
 import { Button } from "@/components/ui/button";
 import { DELETE } from "@/apis/axios";
-import { getCookie } from "cookies-next";
 import { isAdmin } from "@/lib/authHelper";
 import {
   Table,
@@ -21,7 +21,7 @@ import BannerModal from "../components/bannerModal";
 import ConfirmationDialog from "../components/confirmation";
 import Image from "next/image";
 import { Banner } from "@/types/Banner";
-import { postNewBanner } from "@/apis/banner";
+import { uploadNewBanner } from "@/apis/uploads";
 import Breadcrumb from "@/components/BreadCrumb";
 import Container from "@/components/Container";
 import { useRouter } from "next/navigation";
@@ -42,8 +42,7 @@ const BannerPage = () => {
 
   useEffect(() => {
     const fetchBanners = async () => {
-      const accessToken = getCookie("accessToken");
-      if (!accessToken || !isAdmin()) {
+      if (!(await isAdmin())) {
         router.push("/");
       } else {
         try {
@@ -61,18 +60,15 @@ const BannerPage = () => {
   const handleDelete = async () => {
     if (!bannerToDelete) return;
     try {
-      const accessToken = getCookie("accessToken") as string;
-      if (!accessToken) throw new Error("Unauthorized user");
-
       const response = await DELETE({
         route: `/api/dashboard/${bannerToDelete}`,
-        token: accessToken,
       });
 
       if (response.status === 200) {
         setBanners((prev) =>
           prev.filter((banner) => banner._id !== bannerToDelete)
         );
+        notifyCatalogChanged("banners");
         toast.success("Banner deleted successfully.");
       }
     } catch (error) {
@@ -90,11 +86,8 @@ const BannerPage = () => {
 
   const handleSaveBanner = async (newBanner: Banner, files: File[]) => {
     try {
-      const formData = new FormData();
-
-      formData.append("banner", files.length > 0 ? files[0] : newBanner.image);
-
-      const banner = await postNewBanner(formData);
+      if (!files[0]) throw new Error("Зураг сонгоно уу.");
+      const banner = await uploadNewBanner(files[0]);
       toast.success("New banner added successfully.");
       setBanners((prev) => [...prev, banner]);
       setIsModalOpen(false);

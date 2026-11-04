@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { postNewProduct } from "@/apis/products";
+import { uploadNewProduct, uploadUpdatedProduct } from "@/apis/uploads";
 import ProductModal from "@/components/Products/ProductModal";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types/Product";
@@ -25,20 +25,9 @@ const AddProduct = ({
 
   const saveProduct = async (product: Product, files: File[]) => {
     try {
-      const formData = new FormData();
-      Object.keys(product).forEach((key) => {
-        const value = product[key as keyof Product];
-        if (Array.isArray(value)) {
-          value.forEach((item) => formData.append(key, JSON.stringify(item)));
-        } else {
-          formData.append(key, String(value));
-        }
-      });
-      files.forEach((file) => {
-        formData.append("images", file);
-      });
-
-      const data = await postNewProduct(formData);
+      const data = editProduct?._id
+        ? await uploadUpdatedProduct(product, files)
+        : await uploadNewProduct(product, files);
       setProducts((prev) => {
         const existingProductIndex = prev.findIndex((p) => p._id === data._id);
         if (existingProductIndex >= 0) {

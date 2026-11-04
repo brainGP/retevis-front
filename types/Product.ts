@@ -1,6 +1,8 @@
 export interface Product {
   _id: string;
+  id?: string;
   name: string;
+  model?: string;
   brand: string;
   type: string;
   style: string;

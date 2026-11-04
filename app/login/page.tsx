@@ -13,6 +13,7 @@ import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { POST } from "@/apis/axios";
 import BackButton from "@/components/BackButton";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 const Login = () => {
   const [email, setEmail] = useState<string>("");
@@ -48,7 +49,8 @@ const Login = () => {
         return;
       }
 
-      router.push("/");
+      const requested = new URLSearchParams(window.location.search).get("next") || "";
+      router.push(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/");
     } catch (err: unknown) {
       setTimeout(() => {
         if (err instanceof AxiosError && err.response) {
@@ -83,6 +85,7 @@ const Login = () => {
             <form onSubmit={handleLogin} className="space-y-4 text-black">
               <Input
                 type="email"
+                autoComplete="email"
                 placeholder="Имэйл хаяг"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -92,6 +95,7 @@ const Login = () => {
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   placeholder="Нууц үг"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -121,6 +125,7 @@ const Login = () => {
               </Button>
 
               <Separator />
+              <GoogleSignInButton />
 
               <div className="flex justify-between text-sm text-gray">
                 <p>Бүртгүүлээгүй юу?</p>

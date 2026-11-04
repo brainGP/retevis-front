@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Banner } from "@/types/Banner";
+import { compressImage } from "@/lib/compressImage";
 
 interface BannerModalProps {
   banner: Banner | null;
@@ -23,16 +24,22 @@ const BannerModal: React.FC<BannerModalProps> = ({
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   // Handle the image selection and preview
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
-      setUploadedFiles([...uploadedFiles, ...newFiles]);
-
-      // Create a preview URL for the selected image
-      const newImages = newFiles.map((file) => URL.createObjectURL(file));
-      setFormData({ ...formData, image: newImages[0] });
+      event.target.value = "";
+      if (!newFiles.length) return;
+      setIsCompressing(true);
+      try {
+        const compressedFile = await compressImage(newFiles[0]);
+        setUploadedFiles([compressedFile]);
+        setFormData((prev) => ({ ...prev, image: URL.createObjectURL(compressedFile) }));
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -70,10 +77,12 @@ const BannerModal: React.FC<BannerModalProps> = ({
             </label>
             <Input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
               onChange={handleImageChange}
+              disabled={isCompressing}
               className="border-0 mt-1 px-0 block shadow-none w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
             />
+            <p className="text-xs text-gray-500 mt-1">Large photos are compressed before upload when your browser supports it.</p>
             <div className="flex space-x-4 mt-4">
               {formData.image && (
                 <div className="relative">
@@ -105,7 +114,7 @@ const BannerModal: React.FC<BannerModalProps> = ({
             <button className="hover:underline" onClick={onClose}>
               Болих
             </button>
-            <Button className="text-white" onClick={handleSave}>
+            <Button className="text-white" onClick={handleSave} disabled={isCompressing}>
               Save
             </Button>
           </div>

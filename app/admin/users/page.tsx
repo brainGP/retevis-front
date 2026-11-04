@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAdmin } from "@/lib/authHelper";
-import { getCookie } from "cookies-next";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -43,9 +42,7 @@ function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const accessToken = getCookie("accessToken") as string;
-      if (!accessToken) throw new Error("Зөвшөөрөлгүй хэрэглэгч");
-      const response = await GET({ route: `/api/user`, token: accessToken });
+      const response = await GET({ route: `/api/user` });
       if (response.status === 200) {
         setUsers(response.data.users);
       }
@@ -58,11 +55,8 @@ function AdminUsersPage() {
 
   const deleteUser = async (id: string) => {
     try {
-      const accessToken = getCookie("accessToken") as string;
-      if (!accessToken) throw new Error("Зөвшөөрөлгүй хэрэглэгч");
       const response = await DELETE({
         route: `/api/user/${id}`,
-        token: accessToken,
       });
 
       if (response.status === 200) {
@@ -78,12 +72,8 @@ function AdminUsersPage() {
 
   const updateUser = async (user: User) => {
     try {
-      const accessToken = getCookie("accessToken") as string;
-      if (!accessToken) throw new Error("Зөвшөөрөлгүй хэрэглэгч");
-
       const response = await PUT({
         route: `/api/user/${user._id}`,
-        token: accessToken,
         body: user,
       });
       if (response.status === 200) {
@@ -100,12 +90,8 @@ function AdminUsersPage() {
 
   const addUser = async (user: User) => {
     try {
-      const accessToken = getCookie("accessToken") as string;
-      if (!accessToken) throw new Error("Зөвшөөрөлгүй хэрэглэгч");
-
       const response = await POST({
         route: `/api/user`,
-        token: accessToken,
         body: user,
       });
       if (response.status === 201) {
@@ -129,8 +115,7 @@ function AdminUsersPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const accessToken = getCookie("accessToken");
-      if (!accessToken || !isAdmin()) {
+      if (!(await isAdmin())) {
         router.push("/");
       } else {
         await fetchUsers();

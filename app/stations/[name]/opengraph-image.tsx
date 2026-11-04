@@ -1,6 +1,7 @@
+/* eslint @next/next/no-img-element: off */
 import { getProductByName } from "@/apis/products";
 import { ImageResponse } from "next/og";
-import Image from "next/image";
+import { notFound } from "next/navigation";
 
 export const size = {
   width: 1200,
@@ -12,17 +13,19 @@ export const contentType = "image/png";
 export default async function og({ params }: { params: { name: string } }) {
   const name = (await params).name;
   const station = await getProductByName({ name });
+  if (!station) notFound();
+  const imageUrl = station.images?.[0]?.image;
 
   return new ImageResponse(
     (
       // ImageResponse JSX element
       <div tw="relative flex w-full h-full flex items-center justify-center">
         <div tw="absolute flex inset-0">
-          <Image
-            tw="flex flex-1"
-            src={station?.images?.[0]?.image + "&w=1200&h=630&auto=format&q=75"}
-            alt={station?.name}
-          />
+          {imageUrl ? (
+            <img tw="flex flex-1" src={imageUrl} alt={station.name} />
+          ) : (
+            <div tw="flex flex-1 bg-slate-800" />
+          )}
           <div tw="absolute flex inset-0 bg-black bg-opacity-50 z-10" />
         </div>
         <div tw="flex flex-col text-gray">

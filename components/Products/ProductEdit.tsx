@@ -1,4 +1,4 @@
-import { updateProductById } from "@/apis/products";
+import { uploadUpdatedProduct } from "@/apis/uploads";
 import ProductModal from "@/components/Products/ProductModal";
 import { Product } from "@/types/Product";
 import React, { useState } from "react";
@@ -11,9 +11,9 @@ const EditProduct = ({
 }) => {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
 
-  const updateProduct = async (product: Product) => {
+  const updateProduct = async (product: Product, files: File[]) => {
     try {
-      const data = await updateProductById({ product });
+      const data = await uploadUpdatedProduct(product, files);
 
       setProducts((prev) =>
         prev.map((item) => (item._id === product._id ? data : item))

@@ -4,8 +4,9 @@ import React, { ReactNode, useState } from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import ProductGrid from "../ProductGrid";
 import FilterOrder from "../FilterOrder";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Product } from "@/types/Product";
+import type { ProductSearchPage } from "@/apis/products";
 import { LoadingWait } from "../LoadingWait";
 import BackButton from "../BackButton";
 import Breadcrumb from "../BreadCrumb";
@@ -18,7 +19,7 @@ type ProductDisplayProps = {
   title: string;
   hasSort?: boolean;
   fetcherKey?: string[];
-  fetcher: () => Promise<Product[]>;
+  fetcher: (cursor?: string, order?: SortOrder) => Promise<ProductSearchPage>;
   filter?: (product: Product) => boolean;
   error?: ReactNode;
   loader?: ReactNode;
@@ -47,28 +48,14 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
   ),
 }) => {
   const [sortOrder, setSortOrder] = useState<SortOrder>("lowtohigh");
-
-  const getFilteredProducts = async () => {
-    const data = await fetcher();
-    const filteredData = filter ? data.filter(filter) : data;
-
-    const parsePrice = (price: string | number | undefined): number => {
-      if (!price) return 0;
-      return typeof price === "number"
-        ? price
-        : parseFloat(price.toString().replace(/[^0-9.]/g, ""));
-    };
-
-    return filteredData.sort((a, b) => {
-      const multiplier = sortOrder === "hightolow" ? -1 : 1;
-      return multiplier * (parsePrice(a.priceN) - parsePrice(b.priceN));
-    });
-  };
-
-  const { data, isLoading, isError } = useQuery({
-    queryFn: getFilteredProducts,
-    queryKey: [sortOrder, ...fetcherKey, "products"],
+  const filterKey = fetcherKey.join("\u0000");
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryFn: ({ pageParam }) => fetcher(pageParam, sortOrder),
+    queryKey: [sortOrder, filterKey, "products"],
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.pagination.hasMore ? lastPage.pagination.nextCursor || undefined : undefined,
   });
+  const products = (data?.pages.flatMap((page) => page.products) || []).filter((product) => !filter || filter(product));
 
   const handleOrderChange = (order: SortOrder) => {
     setSortOrder(order);
@@ -93,13 +80,25 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
           {loader}
         </div>
       )}
-      {isError && !isLoading && error}
-      {data && data.length > 0 && !isLoading && (
+      {isError && !isLoading && (
+        <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center" role="alert">
+          <p>Бүтээгдэхүүний жагсаалтыг татаж чадсангүй.</p>
+          <button className="rounded border px-4 py-2 hover:bg-gray/5" onClick={() => refetch()}>Дахин оролдох</button>
+        </div>
+      )}
+      {data && products.length > 0 && !isLoading && (
         <ScrollArea>
-          <ProductGrid title={title} products={data} />
+          <ProductGrid title={title} products={products} />
         </ScrollArea>
       )}
-      {!data?.length && !isLoading && !isError && error}
+      {!products.length && !isLoading && !isError && error}
+      {!isError && hasNextPage && !isLoading && (
+        <div className="mt-6 flex justify-center">
+          <button className="rounded border px-5 py-2 disabled:opacity-50" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
+            {isFetchingNextPage ? "Ачаалж байна..." : "Илүү бүтээгдэхүүн үзэх"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

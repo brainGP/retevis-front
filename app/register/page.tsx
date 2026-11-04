@@ -31,9 +31,7 @@ const Signup: React.FC = () => {
   const router = useRouter();
 
   const validatePassword = (password: string) => {
-    const regex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
-    return regex.test(password);
+    return password.length >= 8 && password.length <= 128;
   };
 
   const handleSignup = async (e: FormEvent) => {
@@ -47,7 +45,7 @@ const Signup: React.FC = () => {
     }
     if (!validatePassword(password)) {
       toast.error(
-        "Нууц үг дор хаяж 6 тэмдэгттэй байх ёстой бөгөөд том, жижиг үсэг, тоо, тусгай тэмдэгт агуулсан байх ёстой."
+        "Нууц үг 8-128 тэмдэгт байх шаардлагатай."
       );
       setLoading(false);
       return;
@@ -104,6 +102,7 @@ const Signup: React.FC = () => {
             <form onSubmit={handleSignup} className="space-y-4">
               <Input
                 type="text"
+                autoComplete="username"
                 placeholder="Нэр"
                 value={username}
                 onChange={(e) =>
@@ -118,6 +117,7 @@ const Signup: React.FC = () => {
 
               <Input
                 type="email"
+                autoComplete="email"
                 placeholder="Цахим хаяг"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -128,6 +128,7 @@ const Signup: React.FC = () => {
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   placeholder="Нууц үг"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -155,6 +156,7 @@ const Signup: React.FC = () => {
               <div className="relative">
                 <Input
                   type={showsPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   placeholder="Нууц үг давтах"
                   value={confirmPassword}
                   onChange={(e) => {

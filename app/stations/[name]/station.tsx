@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
+import ProductImage from "@/components/ProductImage";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types/Product";
 import SetQuantity from "./CartQuantity";
@@ -15,7 +16,8 @@ import BatteryIcon from "@/public/icons/battery";
 
 const StationCard = ({ station }: { station: Product }) => {
   const router = useRouter();
-  const [selectedImage, setSelectedImage] = useState(station.images[0]?.image);
+  const productImages = Array.isArray(station.images) ? station.images : [];
+  const [selectedImage, setSelectedImage] = useState(productImages[0]?.image || "/noresult.png");
   const [isProductInCart, setIsProductInCart] = useState(false);
   const handleImageClick = (image: string) => {
     setSelectedImage(image);
@@ -33,7 +35,7 @@ const StationCard = ({ station }: { station: Product }) => {
     hertz: station.hertz,
     status: station.status,
     size: station.size,
-    images: station.images,
+    images: productImages,
     quantity: 1,
     sort: station.sort,
     brand: station.brand,
@@ -72,14 +74,14 @@ const StationCard = ({ station }: { station: Product }) => {
     <div className="flex flex-col lg:flex-row w-full justify-between gap-8 space-y-4 lg:space-y-0 mt-8">
       <div className="flex w-full h-full gap-8 flex-row justify-between">
         <div className="flex flex-col gap-8 justify-center items-center w-[33%]">
-          {station.images.slice(0, 3).map((image) => (
+          {productImages.slice(0, 3).map((image) => (
             <div
               key={image.image}
               onClick={() => handleImageClick(image.image)}
               className="cursor-pointer border hover:border-gray/30 rounded-lg flex justify-center items-center group aspect-square
                  w-full p-2"
             >
-              <Image
+              <ProductImage
                 src={image.image}
                 alt={image.image}
                 width={0}
@@ -92,7 +94,7 @@ const StationCard = ({ station }: { station: Product }) => {
         </div>
 
         <div className="flex justify-center items-center w-full border rounded-lg overflow-hidden bg-white p-8 aspect-square">
-          <Image
+          <ProductImage
             src={selectedImage}
             alt={station.name}
             width={0}

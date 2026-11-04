@@ -1,43 +1,19 @@
-"use client";
-import React from "react";
-import Filter from "@/components/Filter";
-import { getProducts, getProductsByBrand } from "@/apis/products";
-import ProductDisplay from "@/components/Products/ProductDisplay";
-import { useSearchParams } from "next/navigation";
-import { Product } from "@/types/Product";
-import ProductGridSkeleton from "@/skeletons/ProductGridSkeleton";
+import type { Metadata } from "next";
+import StationsCatalog from "./catalog";
 
-const Home = () => {
-  const searchparams = useSearchParams();
-  const brand = searchparams.get("brand") as string;
-  const type = searchparams.get("type") as string;
-  const filterMap: Record<string, string> = {
-    handstation: "Гар станц",
-    basestation: "Суурин станц",
-    equipments: "Дагалдах хэрэгслүүд",
+const indexingEnabled = process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview";
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }): Promise<Metadata> {
+  const params = await searchParams;
+  const hasFilters = Boolean(params.q || params.brand || params.type);
+  return {
+    title: params.q ? `Хайлт: ${String(params.q).slice(0, 60)}` : "Бүтээгдэхүүний каталог",
+    description: "Холбооны радио станц болон дагалдах хэрэгслийн каталог.",
+    alternates: { canonical: `${(process.env.NEXT_PUBLIC_SITE_URL || "https://retevis.mn").replace(/\/$/, "")}/stations` },
+    robots: { index: indexingEnabled && !hasFilters, follow: true },
   };
+}
 
-  const fetcher = brand ? () => getProductsByBrand({ brand }) : getProducts;
-  const filter = type
-    ? (product: Product) => product.sort === filterMap[type]
-    : undefined;
-
-  const title = type ? filterMap[type] : "Бүх бараа";
-
-  return (
-    <div className="flex flex-col lg:flex-row px-4 md:px-8 lg:px-12">
-      <Filter />
-      <div className="w-full flex flex-col p-4">
-        <ProductDisplay
-          title={title}
-          fetcher={fetcher}
-          fetcherKey={[brand, type]}
-          filter={filter}
-          loader={<ProductGridSkeleton />}
-        />
-      </div>
-    </div>
-  );
-};
-
-export default Home;
+export default function StationsPage() {
+  return <StationsCatalog />;
+}

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { compressImage } from "@/lib/compressImage";
 
 interface ProductModalProps {
   product: Product;
@@ -30,6 +31,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [formData, setFormData] = useState<Product>({
     ...product,
     name: product.name || "",
+    model: product.model || "",
     brand: product.brand || "",
     type: product.type || "",
     style: product.style || "",
@@ -48,11 +50,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => {
     setFormData({
       ...product,
       name: product.name || "",
+      model: product.model || "",
       brand: product.brand || "",
       type: product.type || "",
       style: product.style || "",
@@ -86,17 +90,26 @@ const ProductModal: React.FC<ProductModalProps> = ({
     setFormData({ ...formData, status: value === "true" });
   };
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const filesArray = Array.from(event.target.files);
-      const filePreviews = filesArray.map((file) => ({
-        image: URL.createObjectURL(file),
-      }));
-      setFormData({
-        ...formData,
-        images: [...formData.images, ...filePreviews],
-      });
-      setUploadedFiles((prev) => [...prev, ...filesArray]);
+      event.target.value = "";
+      if (uploadedFiles.length + filesArray.length > 8 || formData.images.length + filesArray.length > 12) {
+        toast.error("A product may have at most 12 images and 8 new uploads at a time.");
+        return;
+      }
+      setIsCompressing(true);
+      try {
+        const compressedFiles: File[] = [];
+        for (const file of filesArray) compressedFiles.push(await compressImage(file));
+        const filePreviews = compressedFiles.map((file) => ({
+          image: URL.createObjectURL(file),
+        }));
+        setFormData((prev) => ({ ...prev, images: [...prev.images, ...filePreviews] }));
+        setUploadedFiles((prev) => [...prev, ...compressedFiles]);
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -159,6 +172,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 value={formData.brand}
                 onChange={(e) => handleChange("brand", e.target.value)}
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Загварын дугаар / Model</label>
+              <Input
+                type="text"
+                value={formData.model || ""}
+                onChange={(e) => handleChange("model", e.target.value)}
+                maxLength={120}
+                placeholder="Жишээ: RT-27"
               />
             </div>
             <div>
@@ -312,11 +335,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <label className="block text-sm font-medium">Зураг</label>
               <Input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
                 multiple
                 onChange={handleImageChange}
+                disabled={isCompressing}
                 className=" border-0 mt-1 px-0 block shadow-none w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
               />
+              <p className="text-xs text-gray-500 mt-1">Large photos are compressed before upload when your browser supports it.</p>
               <div className="flex space-x-4 mt-4">
                 {formData.images.map((image, index) => (
                   <div key={index} className="relative">
@@ -343,7 +368,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <button className="hover:underline" onClick={onClose}>
               Болих
             </button>
-            <Button onClick={handleSave}>Хадгалах</Button>
+            <Button onClick={handleSave} disabled={isCompressing}>Хадгалах</Button>
           </div>
         </ScrollArea>
       </div>

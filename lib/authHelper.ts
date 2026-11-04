@@ -1,146 +1,108 @@
-import {
-  getCookie,
-  getCookies,
-  setCookie,
-  deleteCookie,
-} from "cookies-next/client";
-import { GET } from "@/apis/axios";
+import { GET, POST, PUT } from "@/apis/axios";
+import { deleteCookie } from "cookies-next/client";
 
-interface User {
-  accessToken: string;
+export interface PublicUser {
   createdAt?: string;
   email: string;
   isAdmin: boolean;
   username: string;
+  googleLinked?: boolean;
   _id: string;
 }
 
-interface Cookies {
-  email?: string;
-  username?: string;
-  isAdmin?: string;
-  _id?: string;
-}
+let currentUser: PublicUser | null = null;
+let restorePromise: Promise<PublicUser | null> | null = null;
+let authRevision = 0;
+const AUTH_EVENT = "retevis:auth-changed";
+const clearLegacyAuthCookies = () => {
+  if (typeof window === "undefined") return;
+  ["accessToken", "email", "username", "isAdmin", "_id", "createdAt"].forEach((key) => deleteCookie(key, { path: "/" }));
+};
+const notifyAuthChanged = () => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(AUTH_EVENT));
+  try { localStorage.setItem("retevis.authChanged", String(Date.now())); } catch { /* Storage can be disabled. */ }
+};
 
-export const getUserData = () => {
-  const accessToken = getCookie("accessToken");
-  if (!accessToken) {
-    return null;
-  }
-
-  const cookies: Cookies = getCookies() as Cookies;
-  const { email, username, isAdmin, _id } = cookies;
-
-  const user: User = {
-    accessToken,
-    email: email || "",
-    username: username || "",
-    isAdmin: isAdmin === "true",
-    _id: _id || "",
-  };
-  return user;
+export const getUserData = (): PublicUser | null => {
+  clearLegacyAuthCookies();
+  return currentUser;
 };
 
 export const getLastLoginTimestamp = (email: string): number | null => {
-  const lastLogin = getCookie(`lastLogin-${email}`);
-  return lastLogin ? Number(lastLogin) : null;
+  void email;
+  return null;
 };
 
-export const saveLastLoginTimestamp = (email: string): void => {
-  const timestamp = new Date().getTime();
-  setCookie(`lastLogin-${email}`, timestamp, {
-    maxAge: 60 * 60 * 24 * 30,
-    path: "/",
-  });
-};
+export const saveLastLoginTimestamp = (email: string): void => { void email; };
 
-export const isUserLoggedIn = () => {
-  const accessToken = getCookie("accessToken");
-  const cookies: Cookies = getCookies() as Cookies;
+// Browser profile is a UI hint only. The API always checks the HttpOnly session
+// cookie and loads current roles from MongoDB before granting access.
+export const isUserLoggedIn = (): PublicUser | false => getUserData() || false;
 
-  if (
-    !cookies.email ||
-    !cookies.username ||
-    !cookies.isAdmin ||
-    !cookies._id ||
-    !accessToken
-  ) {
-    return false;
-  }
-
-  const user = getUserData();
-  if (!user) {
-    return false;
-  }
-  return user;
+export const restoreUserSession = (): Promise<PublicUser | null> => {
+  if (restorePromise) return restorePromise;
+  const requestRevision = authRevision;
+  restorePromise = (async () => {
+    try {
+      const response = await GET({ route: "/api/auth/me" });
+      if (requestRevision !== authRevision) return currentUser;
+      currentUser = response.data as PublicUser;
+      notifyAuthChanged();
+      return currentUser;
+    } catch {
+      if (requestRevision !== authRevision) return currentUser;
+      currentUser = null;
+      notifyAuthChanged();
+      return null;
+    }
+  })().finally(() => { restorePromise = null; });
+  return restorePromise;
 };
 
 export const isAdmin = async (): Promise<boolean> => {
   try {
-    const accessToken = getCookie("accessToken");
-    if (!accessToken) {
-      return false;
-    }
-    const response = await GET({
-      route: `/api/auth/admin`,
-      token: accessToken,
-    });
-    if (response.status === 200) {
-      return true;
-    }
-    return false;
+    const response = await GET({ route: "/api/auth/admin" });
+    return response.status === 200;
   } catch {
     return false;
   }
 };
 
-export const isAdminC = () => {
-  const accessToken = getCookie("accessToken");
-  if (!accessToken) {
-    return false;
-  }
-  const isAdmin = getCookie("isAdmin");
-  return isAdmin === "true";
+export const isAdminC = (): boolean => Boolean(getUserData()?.isAdmin);
+
+export const logoutUser = async (): Promise<void> => {
+  try { await POST({ route: "/api/auth/logout", body: {} }); } catch { /* Clear the local hint even when offline. */ }
+  clearLegacyAuthCookies();
+  currentUser = null;
+  authRevision += 1;
+  notifyAuthChanged();
 };
 
-export const logoutUser = async () => {
-  deleteCookie("accessToken");
-  deleteCookie("email");
-  deleteCookie("username");
-  deleteCookie("isAdmin");
-  deleteCookie("_id");
-  deleteCookie("createdAt");
-};
-
-export const saveUserData = async (user: User) => {
+export const saveUserData = async (user: PublicUser): Promise<boolean> => {
   try {
-    const duration = Number(process.env.NEXT_PUBLIC_AUTH_DURATION);
-    setCookie("accessToken", user.accessToken, {
-      maxAge: 60 * 60 * 24 * duration,
-      path: "/",
-    });
-    setCookie("email", user.email, {
-      maxAge: 60 * 60 * 24 * duration,
-      path: "/",
-    });
-    setCookie("username", user.username, {
-      maxAge: 60 * 60 * 24 * duration,
-      path: "/",
-    });
-    setCookie("isAdmin", user.isAdmin.toString(), {
-      maxAge: 60 * 60 * 24 * duration,
-      path: "/",
-    });
-    setCookie("_id", user._id, {
-      maxAge: 60 * 60 * 24 * duration,
-      path: "/",
-    });
-    setCookie("createdAt", user.createdAt, {
-      maxAge: 60 * 60 * 24 * duration,
-      path: "/",
-    });
+    clearLegacyAuthCookies();
+    currentUser = { _id: user._id, username: user.username, email: user.email, isAdmin: Boolean(user.isAdmin), createdAt: user.createdAt, googleLinked: Boolean(user.googleLinked) };
+    authRevision += 1;
+    notifyAuthChanged();
     return true;
   } catch {
     return false;
   }
+};
+
+export const updateProfile = async (username: string): Promise<PublicUser> => {
+  const response = await PUT({ route: "/api/auth/profile", body: { username } });
+  const user = response.data as PublicUser;
+  currentUser = { ...user, isAdmin: Boolean(user.isAdmin), googleLinked: Boolean(user.googleLinked) };
+  authRevision += 1;
+  notifyAuthChanged();
+  return currentUser;
+};
+
+export const markGoogleLinked = (): void => {
+  if (!currentUser) return;
+  currentUser = { ...currentUser, googleLinked: true };
+  authRevision += 1;
+  notifyAuthChanged();
 };

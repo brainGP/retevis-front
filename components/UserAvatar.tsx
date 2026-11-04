@@ -1,6 +1,6 @@
 import React from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, SettingsIcon } from "lucide-react";
+import { LogOut, SettingsIcon, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,18 +13,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { isAdminC, logoutUser } from "@/lib/authHelper";
+import { logoutUser } from "@/lib/authHelper";
 import { toast } from "sonner";
 
-function UserAvatar({ name }: { name: string; picture?: string }) {
+function UserAvatar({ name, isAdmin }: { name: string; picture?: string; isAdmin?: boolean }) {
   const router = useRouter();
-  const isUserAdmin = isAdminC();
+  const isUserAdmin = Boolean(isAdmin);
 
-  const handleLogout = () => {
-    logoutUser();
+  const handleLogout = async () => {
+    await logoutUser();
     toast.success("Амжилттай гарлаа!");
     router.push(`/`);
-    window.location.reload();
+    router.refresh();
   };
 
   return (
@@ -44,7 +44,12 @@ function UserAvatar({ name }: { name: string; picture?: string }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
-          <DropdownMenuLabel>Миний мэдээлэл</DropdownMenuLabel>
+          <DropdownMenuLabel className="max-w-56 truncate">{name}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => router.push("/profile")}>
+            <UserRound className="mr-2 h-4 w-4" />
+            <span>Миний профайл</span>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
 
           {isUserAdmin && (

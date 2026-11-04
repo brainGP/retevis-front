@@ -5,20 +5,23 @@ import Providers from "../providers";
 import CartProvider from "@/providers/CartProvider";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://retevis.mn"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://retevis.mn"),
   title: {
     default: "Retevis",
     template: `%s | Станцын төрөлжсөн дэлгүүр`,
   },
-  description: "Retevis Mongolia",
+  description: "Монголын холбооны радио станц, дагалдах хэрэгслийн төрөлжсөн дэлгүүр.",
   icons: "/Retevis/RMlogo.png",
-  verification: {
-    google: "google",
-    yandex: "yandex",
-    yahoo: "yahoo",
-    other: {
-      me: ["my-email", "my-link"],
-    },
+  openGraph: {
+    type: "website",
+    locale: "mn_MN",
+    siteName: "Retevis Mongolia",
+    title: "Retevis | Станцын төрөлжсөн дэлгүүр",
+    description: "Монголын холбооны радио станц, дагалдах хэрэгслийн төрөлжсөн дэлгүүр.",
+  },
+  robots: {
+    index: process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview",
+    follow: process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview",
   },
 };
 
@@ -28,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="overflow-x-hidden">
+    <html lang="mn" className="overflow-x-hidden">
       <head>
         <meta
           name="google-site-verification"

@@ -1,13 +1,12 @@
 "use client";
 import React from "react";
 import ProductGrid from "./ProductGrid";
-import { LoadingError } from "./LoadingError";
 import { getNewProducts } from "@/apis/products";
 import { useQuery } from "@tanstack/react-query";
 import ProductGridSkeleton from "@/skeletons/ProductGridSkeleton";
 
 const NewProducts = () => {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryFn: getNewProducts,
     queryKey: ["new", "products"],
   });
@@ -25,7 +24,12 @@ const NewProducts = () => {
   }
 
   if (error) {
-    return <LoadingError isLoading={true} />;
+    return (
+      <div className="px-8 py-10 text-center" role="alert">
+        <p className="mb-3">Шинэ бүтээгдэхүүн татаж чадсангүй.</p>
+        <button className="rounded border px-4 py-2" onClick={() => refetch()}>Дахин оролдох</button>
+      </div>
+    );
   }
 
   return (

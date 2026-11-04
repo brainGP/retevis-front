@@ -1,8 +1,6 @@
 "use server";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GET, POST } from "./axios";
 import { cookies } from "next/headers";
-import { getCookie, getCookies } from "cookies-next/server";
 import { Banner } from "@/types/Banner";
 
 export const getBanners = async (): Promise<Banner[]> => {
@@ -16,7 +14,7 @@ export const getBanners = async (): Promise<Banner[]> => {
 };
 
 export const postNewBanner = async (banner: FormData): Promise<Banner> => {
-  const { accessToken } = await getCookies({ cookies });
+  const accessToken = (await cookies()).get("rv_access")?.value;
   if (!accessToken) throw new Error("Unauthorized user");
   const res = await POST({
     route: `/api/dashboard`,

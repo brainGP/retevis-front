@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
+import ProductImage from "@/components/ProductImage";
 import { Product } from "@/types/Product";
 import { formatPrice } from "@/utils/formatPrice";
 import { formatText } from "@/utils/formatText";
@@ -33,19 +33,19 @@ const ProductGrid: React.FC<ProductGridProps> = ({ title, products }) => {
 export default ProductGrid;
 
 const ProductCard = ({ product }: { product: Product }) => {
-  const imgUrl = product.images[0].image;
+  const imgUrl = product.images?.[0]?.image || "/noresult.png";
 
   return (
     <Link href={`/stations/${product.name}`}>
       <div className="border hover:border-gray/30 transition-all duration-300 h-[280px] md:h-[300px] w-full rounded-md bg-white group flex flex-col">
         <div className="relative h-48 w-full rounded-md px-4 py-2 md:py-4 overflow-hidden flex items-center justify-center">
-          <Image
+          <ProductImage
             src={imgUrl || "/noresult.png"}
             alt={product.name}
             width={200}
             height={200}
             className="object-contain w-full h-full px- transition-all duration-300 group-hover:scale-105"
-            priority={true}
+            loading="lazy"
           />
         </div>
         <div className="p-4">
