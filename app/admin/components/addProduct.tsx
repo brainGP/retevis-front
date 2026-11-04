@@ -5,6 +5,7 @@ import { uploadNewProduct, uploadUpdatedProduct } from "@/apis/uploads";
 import ProductModal from "@/components/Products/ProductModal";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types/Product";
+import { Plus } from "lucide-react";
 
 const AddProduct = ({
   setProducts,
@@ -45,18 +46,17 @@ const AddProduct = ({
       );
       setEditProduct(null);
     } catch (e) {
-      const err = e as Error;
-      toast.error(err.message);
+      throw e;
     }
   };
 
   return (
     <>
       <Button
-        className="mb-4 text-white"
-        onClick={() => setNewProduct({} as Product)}
+        className="w-full sm:w-auto"
+        onClick={() => { setEditProduct(null); setNewProduct({} as Product); }}
       >
-        Шинэ бүтээгдэхүүн нэмэх
+        <Plus /> Шинэ бүтээгдэхүүн нэмэх
       </Button>
       {newProduct && (
         <ProductModal

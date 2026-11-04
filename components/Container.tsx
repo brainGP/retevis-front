@@ -4,7 +4,7 @@ interface ContainerProps {
 }
 const Container: React.FC<ContainerProps> = ({ children }) => {
   return (
-    <div className="container flex flex-col sm:flex-row items-center justify-between py-4 mx-auto max-w-7xl gap-4 ">
+    <div className="site-container flex flex-col items-center justify-between gap-4 py-4 sm:flex-row">
       {children}
     </div>
   );

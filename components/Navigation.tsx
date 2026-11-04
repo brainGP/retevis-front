@@ -16,63 +16,58 @@ const Navigation = () => {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/", label: "Нүүр", icon: <Home size={24} />, aria: "Home page" },
+    { href: "/", label: "Нүүр", icon: <Home size={21} />, aria: "Home page" },
     {
       href: "/stations",
       label: "Станц",
-      icon: <Smartphone size={24} />,
+      icon: <Smartphone size={21} />,
       aria: "Stations page",
     },
     {
       href: "/other",
       label: "Бусад бараа",
-      icon: <Package size={24} />,
+      icon: <Package size={21} />,
       aria: "Other products page",
     },
     {
       href: "/contact",
       label: "Холбоо барих",
-      icon: <MessageCircleQuestionIcon size={24} />,
+      icon: <MessageCircleQuestionIcon size={21} />,
       aria: "Contact page",
     },
   ];
 
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string) => href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <nav className="flex gap-8 text-sm justify-center items-center flex-wrap">
+    <nav aria-label="Үндсэн цэс" className="flex flex-wrap items-center justify-center gap-8 text-sm">
       {/* Desktop view */}
       <div className="hidden md:flex gap-8">
         {navItems.map((item, index) => (
           <div
             key={index}
-            className={classNames(
-              "flex items-center gap-1 group",
-              isActive(item.href)
-                ? "text-yellow font-medium underline underline-offset-1"
-                : "text-gray hover:text-yellow cursor-pointer"
-            )}
+            className="group"
           >
-            <Link href={item.href}>{item.label}</Link>
+            <Link href={item.href} aria-current={isActive(item.href) ? "page" : undefined} className={classNames(
+              "relative inline-flex items-center py-2 font-medium transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:rounded-full after:bg-yellow after:transition-transform",
+              isActive(item.href) ? "text-slate-950 after:scale-x-100" : "text-slate-600 after:scale-x-0 hover:text-slate-950 group-hover:after:scale-x-100"
+            )}>{item.label}</Link>
           </div>
         ))}
       </div>
 
       {/* Mobile view */}
-      <div className="w-full flex md:hidden h-[60px] bg-white border-t items-center justify-between px-8">
+      <div className="w-full flex md:hidden min-h-[68px] border-t border-slate-200/80 bg-white/95 backdrop-blur-xl items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item, index) => (
           <Link
             key={index}
             href={item.href}
             aria-label={item.aria}
-            className={classNames(
-              "flex items-center justify-center gap-2 py-4 px-2",
-              isActive(item.href)
-                ? "text-yellow"
-                : "text-gray hover:text-yellow"
-            )}
+            aria-current={isActive(item.href) ? "page" : undefined}
+            className={classNames("flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 text-[10px] font-medium transition-colors", isActive(item.href) ? "text-amber-700" : "text-slate-500 hover:text-slate-900")}
           >
-            {item.icon}
+            <span className={classNames("flex h-8 w-10 items-center justify-center rounded-xl transition-colors", isActive(item.href) ? "bg-amber-50" : "")}>{item.icon}</span>
+            <span className="leading-none">{item.label}</span>
           </Link>
         ))}
       </div>

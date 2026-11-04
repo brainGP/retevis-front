@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types/Product";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface ProductActionsProps {
   product: Product;
@@ -13,18 +14,24 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
   onDelete,
 }) => {
   return (
-    <div className="flex flex-col lg:flex-row space-x-2">
+    <div className="flex justify-end gap-1">
       <Button
-        className="bg-transparent hover:underline hover:bg-transparent shadow-none text-gray px-3 py-1 rounded"
+        variant="ghost"
+        size="sm"
+        aria-label={`${product.name} засах`}
+        className="px-2 text-slate-600 hover:text-slate-900"
         onClick={() => onEdit(product)}
       >
-        Засварлах
+        <Pencil /> <span className="hidden xl:inline">Засах</span>
       </Button>
       <Button
-        className="bg-red-500 hover:bg-red-400 text-white px-3 py-1 rounded"
+        variant="ghost"
+        size="sm"
+        aria-label={`${product.name} устгах`}
+        className="px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
         onClick={() => onDelete(product._id!)}
       >
-        Устгах
+        <Trash2 /> <span className="hidden xl:inline">Устгах</span>
       </Button>
     </div>
   );

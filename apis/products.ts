@@ -1,6 +1,4 @@
-"use server";
 import { DELETE, GET, POST, PUT } from "./axios";
-import { cookies } from "next/headers";
 import { Product } from "@/types/Product";
 import { AxiosError } from "axios";
 
@@ -19,17 +17,24 @@ export const getProductsPage = async (cursor?: string, filters: { sort?: string;
   return response.data as ProductSearchPage;
 };
 
-// Full collection reads are reserved for the administrator inventory table.
-async function getServerAccessToken(): Promise<string | undefined> {
-  return (await cookies()).get("rv_access")?.value;
+function adminRequestError(error: unknown, fallback: string): Error {
+  if (error instanceof AxiosError) {
+    if (error.response?.status === 401) return new Error("Нэвтрэх хугацаа дууссан байна. Дахин нэвтэрнэ үү.");
+    if (error.response?.status === 403) return new Error("Зөвхөн админ эрхтэй хэрэглэгч энэ үйлдлийг хийх боломжтой.");
+  }
+  return new Error(fallback);
 }
 
+// This is a browser request so the backend's HttpOnly /api cookie is attached
+// by the browser. Admin authorization remains enforced by the backend route.
 export const getProducts = async (): Promise<Product[]> => {
-  const token = await getServerAccessToken();
-  if (!token) throw new Error("Зөвшөөрөлгүй хэрэглэгч");
-  const response = await GET({ route: "/api/product?all=true", token });
-  if (response.status !== 200) throw new Error("Алдаа гарлаа");
-  return response.data.products || [];
+  try {
+    const response = await GET({ route: "/api/product?all=true" });
+    if (response.status !== 200) throw new Error("Бүтээгдэхүүн татаж чадсангүй.");
+    return response.data.products || [];
+  } catch (error) {
+    throw adminRequestError(error, "Бүтээгдэхүүн татаж чадсангүй.");
+  }
 };
 
 export const getProductByName = async ({
@@ -106,28 +111,22 @@ export const getProductById = async ({
 };
 
 export const postNewProduct = async (product: FormData): Promise<Product> => {
-  const accessToken = await getServerAccessToken();
-  if (!accessToken) throw new Error("Зөвшөөрөлгүй хэрэглэгч");
-  const response = await POST({
-    route: `/api/product`,
-    token: accessToken,
-    body: product,
-  });
-  if (response.status !== 200)
-    throw new Error("Бүтээгдэхүүнийг нэмж чадсангүй.");
-  return response.data;
+  try {
+    const response = await POST({ route: "/api/product", body: product });
+    if (response.status !== 200) throw new Error("Бүтээгдэхүүнийг нэмж чадсангүй.");
+    return response.data;
+  } catch (error) {
+    throw adminRequestError(error, "Бүтээгдэхүүнийг нэмж чадсангүй.");
+  }
 };
 
 export const deleteProductById = async ({ id }: { id: string }) => {
-  const accessToken = await getServerAccessToken();
-  if (!accessToken) throw new Error("Зөвшөөрөлгүй хэрэглэгч");
-  const response = await DELETE({
-    route: `/api/product/${id}`,
-    token: accessToken,
-  });
-
-  if (response.status !== 200)
-    throw new Error("Бүтээгдэхүүнийг устгаж чадсангүй.!");
+  try {
+    const response = await DELETE({ route: `/api/product/${encodeURIComponent(id)}` });
+    if (response.status !== 200) throw new Error("Бүтээгдэхүүнийг устгаж чадсангүй.");
+  } catch (error) {
+    throw adminRequestError(error, "Бүтээгдэхүүнийг устгаж чадсангүй.");
+  }
 };
 
 export const updateProductById = async ({
@@ -137,15 +136,35 @@ export const updateProductById = async ({
   product: Product;
   formData?: FormData;
 }): Promise<Product> => {
-  const accessToken = await getServerAccessToken();
-  if (!accessToken) throw new Error("Зөвшөөрөлгүй хэрэглэгч");
-  const response = await PUT({
-    route: `/api/product/${product._id}`,
-    token: accessToken,
-    body: formData || product,
-  });
+  try {
+    const response = await PUT({
+      route: `/api/product/${encodeURIComponent(product._id)}`,
+      body: formData || product,
+    });
+    if (response.status !== 200) throw new Error("Бүтээгдэхүүнийг шинэчилж чадсангүй.");
+    return response.data;
+  } catch (error) {
+    throw adminRequestError(error, "Бүтээгдэхүүнийг шинэчилж чадсангүй.");
+  }
+};
 
-  if (response.status !== 200)
-    throw new Error("Бүтээгдэхүүнийг шинэчилж чадсангүй.");
-  return response.data;
+export const updateProductStock = async ({
+  id,
+  quantity,
+  status,
+}: {
+  id: string;
+  quantity?: number;
+  status?: boolean;
+}): Promise<Product> => {
+  const body: { quantity?: number; status?: boolean } = {};
+  if (quantity !== undefined) body.quantity = quantity;
+  if (status !== undefined) body.status = status;
+  try {
+    const response = await PUT({ route: `/api/product/${encodeURIComponent(id)}`, body });
+    if (response.status !== 200) throw new Error("Бүтээгдэхүүний үлдэгдлийг шинэчилж чадсангүй.");
+    return response.data as Product;
+  } catch (error) {
+    throw adminRequestError(error, "Бүтээгдэхүүний үлдэгдлийг шинэчилж чадсангүй.");
+  }
 };

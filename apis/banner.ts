@@ -1,6 +1,4 @@
-"use server";
 import { GET, POST } from "./axios";
-import { cookies } from "next/headers";
 import { Banner } from "@/types/Banner";
 
 export const getBanners = async (): Promise<Banner[]> => {
@@ -14,11 +12,8 @@ export const getBanners = async (): Promise<Banner[]> => {
 };
 
 export const postNewBanner = async (banner: FormData): Promise<Banner> => {
-  const accessToken = (await cookies()).get("rv_access")?.value;
-  if (!accessToken) throw new Error("Unauthorized user");
   const res = await POST({
     route: `/api/dashboard`,
-    token: accessToken,
     body: banner,
   });
 

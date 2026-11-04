@@ -3,11 +3,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
-import { CalendarDays, CheckCircle2, Link2, Mail, UserRound } from "lucide-react";
+import { CalendarDays, CheckCircle2, Link2, Mail } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import ProfilePasswordSettings from "@/components/ProfilePasswordSettings";
+import Link from "next/link";
 import { getUserData, restoreUserSession, updateProfile, type PublicUser } from "@/lib/authHelper";
 
 function errorText(error: unknown) {
@@ -74,55 +77,81 @@ export default function ProfilePage() {
   };
 
   if (loading || !user) {
-    return <main className="mx-auto min-h-[60vh] max-w-3xl px-4 py-16" aria-busy="true"><div className="h-8 w-48 animate-pulse rounded bg-slate-200" /><div className="mt-6 h-56 animate-pulse rounded-xl bg-slate-100" /></main>;
+    return (
+      <main className="site-container min-h-[65vh] py-10 sm:py-14" aria-busy="true">
+        <div className="mx-auto max-w-3xl">
+          <div className="h-3 w-28 animate-pulse rounded bg-slate-200" />
+          <div className="mt-3 h-8 w-48 animate-pulse rounded bg-slate-200" />
+          <div className="mt-6 h-52 animate-pulse rounded-xl border border-slate-200 bg-white" />
+        </div>
+      </main>
+    );
   }
 
+  const initial = user.username.trim().charAt(0).toLocaleUpperCase("mn-MN") || "R";
+  const memberSince = user.createdAt && !Number.isNaN(new Date(user.createdAt).getTime())
+    ? new Intl.DateTimeFormat("mn-MN", { year: "numeric", month: "long" }).format(new Date(user.createdAt))
+    : null;
+
   return (
-    <main className="mx-auto min-h-[65vh] max-w-3xl px-4 py-10 md:py-16">
-      <div className="mb-8">
-        <p className="text-sm font-semibold uppercase tracking-wider text-amber-700">Хэрэглэгчийн булан</p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-900">Миний профайл</h1>
-        <p className="mt-2 text-slate-600">Бүртгэлийн мэдээлэл болон нэвтрэх аргаа удирдана уу.</p>
+    <main className="site-container min-h-[65vh] py-10 sm:py-14">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-6 sm:mb-8">
+          <Link href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow/50">
+            <ArrowLeft className="h-4 w-4" /> Дэлгүүр рүү буцах
+          </Link>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Retevis Mongolia</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Миний профайл</h1>
+          <p className="mt-2 text-sm text-slate-500 sm:text-base">Бүртгэлийн мэдээллээ харах, шинэчлэх.</p>
+        </div>
+
+        <Card className="rounded-xl border-slate-200 bg-white shadow-sm">
+          <CardContent className="p-5 sm:p-7">
+            <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg font-semibold text-slate-700">{initial}</div>
+              <div className="min-w-0">
+                <h2 className="truncate font-semibold text-slate-900">{user.username}</h2>
+                <p className="truncate text-sm text-slate-500">{user.email}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-4 py-5">
+              <h3 className="text-base font-semibold text-slate-900">Үндсэн мэдээлэл</h3>
+              <label className="block space-y-2 text-sm font-medium text-slate-700" htmlFor="profile-username">
+                Хэрэглэгчийн нэр
+                <Input id="profile-username" value={username} onChange={(event) => setUsername(event.target.value)} minLength={2} maxLength={80} autoComplete="username" required disabled={saving} className="h-10 rounded-lg border-slate-200 bg-white px-3 focus-visible:ring-yellow/40" />
+              </label>
+              <div className="flex items-start gap-2 text-sm text-slate-500">
+                <Mail className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{user.email} · Имэйл хаягийг эндээс өөрчлөх боломжгүй.</span>
+              </div>
+              {memberSince && <p className="flex items-center gap-2 text-sm text-slate-500"><CalendarDays className="h-4 w-4" />Бүртгүүлсэн: {memberSince}</p>}
+              {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+              {success && <p className="flex items-center gap-2 text-sm text-green-700" role="status"><CheckCircle2 className="h-4 w-4" />{success}</p>}
+              <Button type="submit" disabled={saving || username.trim() === user.username} className="h-10 w-full rounded-lg sm:w-auto">
+                {saving ? "Хадгалж байна..." : "Өөрчлөлт хадгалах"}
+              </Button>
+            </form>
+
+            <div className="border-t border-slate-100 pt-5">
+              <div className="mb-3 flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-slate-500" />
+                <h3 className="text-base font-semibold text-slate-900">Google бүртгэл</h3>
+              </div>
+              {user.googleLinked ? (
+                <p className="flex items-center gap-2 text-sm text-green-700"><CheckCircle2 className="h-4 w-4" />Google хаяг холбогдсон</p>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm leading-6 text-slate-500">Google хаягаа холбоод дараа нь Google-ээр нэвтэрч болно. Баталгаажсан имэйл нь энэ бүртгэлийн имэйлтэй таарч, та саяхан нэвтэрсэн байх шаардлагатай.</p>
+                  <GoogleSignInButton mode="link" />
+                </div>
+              )}
+            </div>
+
+            <ProfilePasswordSettings email={user.email} />
+          </CardContent>
+        </Card>
       </div>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><UserRound className="h-5 w-5" />Үндсэн мэдээлэл</CardTitle>
-          <CardDescription>Харагдах нэрээ шинэчилж болно. Имэйл хаягийг одоогоор өөрчлөх боломжгүй.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSave} className="space-y-4">
-            <label className="block space-y-2 text-sm font-medium" htmlFor="profile-username">
-              Хэрэглэгчийн нэр
-              <Input id="profile-username" value={username} onChange={(event) => setUsername(event.target.value)} minLength={2} maxLength={80} autoComplete="username" required disabled={saving} />
-            </label>
-            <div className="flex items-start gap-3 rounded-md bg-slate-50 p-3 text-sm text-slate-600">
-              <Mail className="mt-0.5 h-4 w-4 shrink-0" /><span><strong className="text-slate-800">{user.email}</strong><br />Имэйл солих баталгаажуулалтын урсгал одоогоор тохируулагдаагүй.</span>
-            </div>
-            {user.createdAt && <p className="flex items-center gap-2 text-sm text-slate-500"><CalendarDays className="h-4 w-4" />Бүртгүүлсэн: {new Date(user.createdAt).toLocaleDateString("mn-MN")}</p>}
-            {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
-            {success && <p className="flex items-center gap-2 text-sm text-green-700" role="status"><CheckCircle2 className="h-4 w-4" />{success}</p>}
-            <Button type="submit" disabled={saving || username.trim() === user.username}>{saving ? "Хадгалж байна..." : "Өөрчлөлт хадгалах"}</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Link2 className="h-5 w-5" />Google бүртгэл</CardTitle>
-          <CardDescription>{user.googleLinked ? "Google хаяг энэ профайлтай холбогдсон байна." : "Google хаягаа холбоод дараа нь Google-ээр нэвтрэх боломжтой болгоно."}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {user.googleLinked ? (
-            <div className="flex items-center gap-2 text-sm font-medium text-green-700"><CheckCircle2 className="h-5 w-5" />Google хаяг холбогдсон</div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-slate-600">Аюулгүй байдлын үүднээс Google-ийн баталгаажсан имэйл нь энэ бүртгэлийн имэйлтэй таарч, саяхан нэвтэрсэн байх шаардлагатай.</p>
-              <GoogleSignInButton mode="link" />
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </main>
   );
 }

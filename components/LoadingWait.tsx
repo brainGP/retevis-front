@@ -10,10 +10,10 @@ export const LoadingWait: React.FC<LoadingWaitProps> = ({
 }) => {
   if (isLoading)
     return (
-      <div className="flex justify-center items-center bg-transparent bg-opacity-80">
+      <div className="flex min-h-6 items-center justify-center" role="status" aria-label="Ачаалж байна">
         <Image
           src="/icons/loading.svg"
-          alt="loading"
+          alt=""
           width={24}
           height={24}
           className="animate-spin"

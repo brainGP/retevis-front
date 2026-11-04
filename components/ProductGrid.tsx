@@ -21,7 +21,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ title, products }) => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 xl:gap-5">
         {products.map((product) => (
           <ProductCard product={product} key={product._id} />
         ))}
@@ -36,26 +36,29 @@ const ProductCard = ({ product }: { product: Product }) => {
   const imgUrl = product.images?.[0]?.image || "/noresult.png";
 
   return (
-    <Link href={`/stations/${product.name}`}>
-      <div className="border hover:border-gray/30 transition-all duration-300 h-[280px] md:h-[300px] w-full rounded-md bg-white group flex flex-col">
-        <div className="relative h-48 w-full rounded-md px-4 py-2 md:py-4 overflow-hidden flex items-center justify-center">
+    <Link href={`/stations/${product.name}`} className="group block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow focus-visible:ring-offset-2">
+      <article className="flex h-full min-h-[270px] flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.035)] transition duration-200 ease-out group-hover:-translate-y-0.5 group-hover:border-slate-300 group-hover:shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:min-h-[300px]">
+        <div className="relative aspect-square w-full overflow-hidden bg-slate-50 p-4 sm:p-5">
           <ProductImage
             src={imgUrl || "/noresult.png"}
             alt={product.name}
             width={200}
             height={200}
-            className="object-contain w-full h-full px- transition-all duration-300 group-hover:scale-105"
+            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
             loading="lazy"
           />
         </div>
-        <div className="p-4">
-          <h3 className="text-lg">{formatText(product.name)}</h3>
-          <p className="font-bold text-xl">{formatPrice(product.priceN)}₮</p>
-          <p className="text-sm text-start">
-            {product.type} {product.style}
+        <div className="flex flex-1 flex-col p-3 sm:p-4">
+          <p className="mb-1.5 truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{product.brand}</p>
+          <h3 className="line-clamp-2 min-h-10 text-sm font-medium leading-5 text-slate-800 transition-colors group-hover:text-slate-950 sm:text-base">
+            {formatText(product.name)}
+          </h3>
+          <p className="mt-auto pt-3 text-base font-bold tracking-tight text-slate-900 sm:text-lg">{formatPrice(product.priceN)} <span className="text-sm font-semibold">₮</span></p>
+          <p className="mt-1 truncate text-xs text-slate-500">
+            {[product.type, product.style].filter(Boolean).join(" · ")}
           </p>
         </div>
-      </div>
+      </article>
     </Link>
   );
 };

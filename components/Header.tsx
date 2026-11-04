@@ -14,28 +14,24 @@ const Header: React.FC = () => {
   const [visibleHeader, setVisibleHeader] = useState(true);
   const [showBottomNav, setShowBottomNav] = useState(true);
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
   useEffect(() => {
+    let frameId: number | null = null;
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setShowBottomNav(false);
-      } else {
-        setShowBottomNav(true);
-      }
-
-      setVisibleHeader(currentScrollY < 50);
-
-      setShowScrollTopBtn(currentScrollY > 200);
-
-      setLastScrollY(currentScrollY);
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(() => {
+        const currentScrollY = window.scrollY;
+        setVisibleHeader(currentScrollY < 50);
+        setShowScrollTopBtn(currentScrollY > 200);
+        frameId = null;
+      });
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+    };
+  }, []);
 
   useEffect(() => {
     const originalHeight = window.innerHeight;
@@ -65,11 +61,11 @@ const Header: React.FC = () => {
       {/* Mobile Header */}
       <div
         className={cn(
-          "sticky top-0 z-30 w-full bg-white opacity-95 border-b transition-transform duration-300 ease-in-out md:hidden",
-          visibleHeader ? "translate-y-0" : "-translate-y-[56px]"
+          "sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_2px_12px_rgba(15,23,42,0.04)] backdrop-blur-xl transition-transform duration-200 ease-out md:hidden",
+          visibleHeader ? "translate-y-0" : "-translate-y-full"
         )}
       >
-        <div className="px-8 py-6 pb-2 flex flex-col gap-2 w-full">
+        <div className="flex w-full flex-col gap-3 px-4 py-3">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex-shrink-0">
               <Image
@@ -81,7 +77,7 @@ const Header: React.FC = () => {
                 priority
               />
             </Link>
-            <div className="flex items-center gap-6 p-2">
+            <div className="flex items-center gap-3 p-1">
               <ShopCard />
               <Profile />
             </div>
@@ -91,36 +87,48 @@ const Header: React.FC = () => {
       </div>
 
       {/* Desktop Header */}
-      <div
-        className={cn(
-          "sticky top-0 z-30 w-full bg-white bg-opacity-95 border-b transition-transform duration-300 ease-in-out hidden md:block",
-          visibleHeader ? "translate-y-0" : "-translate-y-[86px]"
-        )}
-      >
-        <div className="container flex items-center justify-between mx-auto gap-4">
-          <div className="w-full py-4">
-            <div className="flex justify-between items-center">
-              <Link href="/" className="flex-shrink-0">
-                <Image
-                  src="/Retevis/retevis.png"
-                  alt="Retevis Logo"
-                  width={160}
-                  height={80}
-                  className="object-contain"
-                  priority
-                />
-              </Link>
+      <div className="sticky top-0 z-30 hidden w-full md:block">
+        <div
+          className={cn(
+            "grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out",
+            visibleHeader ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"
+          )}
+          aria-hidden={!visibleHeader}
+        >
+          <div className={cn(
+            "min-h-0 overflow-hidden bg-white/95 shadow-[0_2px_12px_rgba(15,23,42,0.04)] backdrop-blur-xl",
+            visibleHeader && "border-b border-slate-200/80"
+          )}>
+            <div className="site-container flex items-center justify-between gap-4">
+              <div className="w-full py-3">
+                <div className="flex items-center justify-between">
+                  <Link href="/" className="flex-shrink-0">
+                    <Image
+                      src="/Retevis/retevis.png"
+                      alt="Retevis Logo"
+                      width={160}
+                      height={80}
+                      className="object-contain"
+                      priority
+                    />
+                  </Link>
 
-              <div className="w-full flex-1 max-w-md md:max-w-lg">
-                <Search />
-              </div>
+                  <div className="w-full max-w-md flex-1 md:max-w-lg">
+                    <Search />
+                  </div>
 
-              <div className="flex items-center gap-12 md:gap-8">
-                <ShopCard />
-                <Profile />
+                  <div className="flex items-center gap-8">
+                    <ShopCard />
+                    <Profile />
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="w-full h-[1px] bg-neutral-200 my-4" />
+          </div>
+        </div>
+
+        <div className="sticky top-0 z-20 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_2px_12px_rgba(15,23,42,0.04)] backdrop-blur-xl">
+          <div className="site-container py-1.5">
             <Navigation />
           </div>
         </div>
@@ -129,7 +137,7 @@ const Header: React.FC = () => {
       {/* Bottom Mobile Navigation */}
       <div
         className={cn(
-          "md:hidden fixed bottom-0 left-0 w-full z-30 border-t bg-white shadow-md transition-transform duration-300",
+          "md:hidden fixed bottom-0 left-0 w-full z-30 border-t bg-white shadow-md transition-transform duration-200 ease-out",
           showBottomNav ? "translate-y-0" : "translate-y-full"
         )}
       >

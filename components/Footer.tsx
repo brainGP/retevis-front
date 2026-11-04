@@ -4,10 +4,11 @@ import Link from "next/link";
 import ContactInfo from "./ContactInfo";
 
 const Footer: React.FC = () => {
+  const currentYear = new Date().getFullYear();
   return (
     <footer className="flex flex-col justify-center items-center px-8 md:mt-1 text-gray">
       <div className="h-[0.5px] w-full bg-gray/20 my-4" />
-      <div className="container mx-auto max-w-7xl py-6">
+      <div className="site-container py-6">
         {/* Footer Grid */}
         <div className="grid grid-cols-2 justify-center md:grid-cols-4 gap-8">
           {/* Logo Section */}
@@ -47,6 +48,9 @@ const Footer: React.FC = () => {
             <h2 className="text-lg font-semibold">СОШИАЛ ХАЯГУУД</h2>
             <a
               href="https://www.facebook.com/RetevisMongolia"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Retevis Mongolia Facebook хуудсыг нээх"
               className="flex items-center gap-2 text-sm mt-2 hover:scale-105 duration-300 transition hover:underline"
             >
               <Image
@@ -59,7 +63,10 @@ const Footer: React.FC = () => {
               Retevis Mongolia
             </a>
             <a
-              href="https://www.instagram.com/retevis_mongolia"
+              href="https://www.instagram.com/retevis_mongolia/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Retevis Mongolia Instagram хуудсыг нээх"
               className="flex items-center gap-2 text-sm mt-2 hover:scale-105 duration-300 transition hover:underline"
             >
               <Image
@@ -77,14 +84,14 @@ const Footer: React.FC = () => {
 
       <div className="h-[0.5px] w-full bg-gray/20 my-4" />
       <div className="w-full border-gray py-4 text-sm text-center ">
-        <span className="text-yellow">© 2024 Retevis Mongolia</span>
+        <span className="text-yellow">© {currentYear} Retevis Mongolia</span>
 
         <p className="p-4">
           Америк стандартын RETEVIS брэндийн хэт богино долгионы гар болон
           суурин радио станцын төрөлжсөн худалдаа.
         </p>
       </div>
-      <div className="h-[60px] md:h-0" />
+      <div className="h-[calc(68px+env(safe-area-inset-bottom))] md:h-0" />
     </footer>
   );
 };

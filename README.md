@@ -23,17 +23,29 @@ Start the frontend with `npm run dev` and open `http://localhost:3000`. `npm run
 - `/cart`, `/contact`, `/login`, `/register`, and `/profile` (signed-in account settings)
 - `/admin` product, user, and banner management
 
+## Storefront visual style
+
+The storefront keeps the Retevis logo and restrained yellow/navy palette. Shared navigation uses clear active states and compact mobile labels; catalog cards prioritize product photography, readable names, and price. Avoid decorative gradients or effects that compete with product images.
+
+Storefront content sections share the `.site-container` width. Search suggestions show recently searched terms and up to five real newest database products when the input is focused but empty. Buttons use short hover/focus feedback, and route/catalog skeletons use the same product-card proportions while preserving the centered loading indicator.
+
 Search suggestions query the backend after a short pause and display a bounded result set. The cart is stored in the current browser's local storage; it is not a server-side order or checkout system.
 
 Admin product and banner uploads send directly to the configured backend, avoiding the extra Next.js Server Action transfer. Local development uses `http://localhost:8000`; hosted frontend origins must be included in the backend's `ALLOWED_CORS` setting. Supported browser uploads are compressed to WebP when that produces a smaller file, then resized/compressed again during Cloudinary ingestion.
 
+The admin workspace shares a compact section navigation for products, banners, and users. Product inventory can be searched by catalog text and filtered by category; product and banner dialogs show image previews, compress images in the browser where supported, and retain the form on save failure. Uploaded images must fit the backend's 5MB-per-image limit after browser compression.
+
+The admin product table supports inline stock quantity edits and an active/hidden visibility control. Only products with `status: "true"` are returned by public catalog, search, newest-product, detail, and sitemap APIs; the authenticated admin inventory continues to include hidden products. Set the quantity to `0` to mark the item out of stock while keeping it visible if it remains active.
+
 Browser authentication credentials are backend-set HttpOnly cookies; the in-memory frontend profile is only a display hint and is not an authorization source. Backend authorization reloads current user/admin status. The cart and optional recent searches use localStorage; passwords and tokens are never stored there. See `../GOOGLE_AUTH_SETUP.md` for cookie, refresh, origin, session, and Google setup policy.
 
-The account menu links to `/profile`. Users can update only their display username there; email changes are unavailable until an email verification flow is added. Google account linking requires a recently authenticated session and a verified Google email matching the account email. The API returns only a `googleLinked` status, never the Google subject. GIS button setup retries across script/hydration timing and presents a load error if Google's script is unavailable.
+The account menu links to `/profile`. Users can update their display username and use an emailed one-time code to create or replace their password; email changes are not available. Google account linking requires a recently authenticated session and a verified Google email matching the account email. The API returns only a `googleLinked` status, never the Google subject. GIS button setup retries across script/hydration timing and presents a load error if Google's script is unavailable. Resend credentials are configured only in the backend; see `../retevis-backend/README.md`.
 
-The catalog uses cursor-based pages (24 products initially, up to 48 per request) and loads subsequent pages on demand. Search suggestions are bounded real API results; an empty search restores the normal filtered catalog. Search supports Mongolian/English synonyms, transliteration variants, short prefixes, and a constrained spelling-variant vocabulary. Efficient indexed matching requires running and verifying the explicit backend catalog field/index preparation script before enabling its production flag. See `../SEARCH_ARCHITECTURE.md` and `../PERFORMANCE_ARCHITECTURE.md` for rollout details.
+The catalog uses cursor-based pages (24 products initially, up to 48 per request) and loads subsequent pages on demand using normal page scrolling. A failed later page keeps already loaded products visible and offers a retry. Search suggestions are bounded real API results; an empty search restores the normal filtered catalog. Search supports Mongolian/English synonyms, transliteration variants, short prefixes, and a constrained spelling-variant vocabulary. Efficient indexed matching requires running and verifying the explicit backend catalog field/index preparation script before enabling its production flag. See `../SEARCH_ARCHITECTURE.md` and `../PERFORMANCE_ARCHITECTURE.md` for rollout details.
 
 Product search/filter pages and admin/private routes are excluded from indexing. Public product detail metadata, product JSON-LD, sitemap, and robots output require setting the real canonical site URL and explicitly enabling production indexing. Verify rendered HTML and the deployed robots/sitemap before launch.
+
+Product detail galleries use every stored product image. The selected image fills the gallery frame with contain scaling; customers can switch with the thumbnail rail or open the full-screen viewer, use arrow keys/buttons, and select any image.
 
 ## Related documentation
 

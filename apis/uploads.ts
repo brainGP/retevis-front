@@ -43,3 +43,14 @@ export async function uploadNewBanner(file: File): Promise<Banner> {
   notifyCatalogChanged("banners");
   return response.data as Banner;
 }
+
+export async function uploadUpdatedBanner(id: string, file: File): Promise<Banner> {
+  const body = new FormData();
+  body.append("banner", file);
+  const response = await PUT({
+    route: `/api/dashboard/${encodeURIComponent(id)}`,
+    body,
+  });
+  notifyCatalogChanged("banners");
+  return response.data as Banner;
+}

@@ -22,9 +22,9 @@ const OtherPage = () => {
   const title = "Бусад бараа";
 
   return (
-    <div className="flex flex-col lg:flex-row px-4 md:px-8 lg:px-12">
+    <div className="site-container flex flex-col gap-4 py-4 lg:flex-row lg:gap-8">
       <Filter />
-      <div className="w-full flex flex-col p-4">
+      <div className="min-w-0 w-full flex-1 py-2 lg:py-4">
         <ProductDisplay
           title={title}
           fetcher={fetcher}

@@ -60,7 +60,7 @@ const StationNamePage = async ({
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productStructuredData).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbStructuredData).replace(/</g, "\\u003c") }} />
-      <div className="px-8 md:px-12 lg:px-16 flex-1 justify-center gap-8">
+      <div className="site-container flex-1 justify-center gap-8 py-4">
         <div className="flex gap-4 items-center pt-4">
           <BackButton />
           <Breadcrumb />

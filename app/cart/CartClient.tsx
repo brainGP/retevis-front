@@ -16,7 +16,7 @@ const CartClient = () => {
 
   if (!cartProducts || cartProducts.length === 0) {
     return (
-      <div className="flex justify-center items-center flex-col w-full h-96 space-y-4">
+      <div className="site-container flex min-h-[60vh] flex-col items-center justify-center space-y-4 py-10">
         <Image src={`/noresult.png`} alt="image" height={200} width={200} />
         <p className="font-semibold text-center">
           Танд сагсанд хийсэн бүтээгдэхүүн байхгүй байна!
@@ -29,8 +29,8 @@ const CartClient = () => {
   }
 
   return (
-    <div className="flex flex-col justify-center items-center w-full top-0 border-b px-4 md:px-6 mb-8 py-4">
-      <div className="container flex flex-col items-center justify-start py-4 mx-auto max-w-7xl gap-4 ">
+    <div className="flex w-full flex-col items-center justify-center border-b py-4">
+      <div className="site-container flex flex-col items-center justify-start gap-4 py-4">
         <div className=" w-full flex justify-start">
           <h1 className="font-semibold text-xl mb-4 justify-start">
             Хадгалсан бүтээгдэхүүнүүд
@@ -43,7 +43,7 @@ const CartClient = () => {
       <Container>
         <CartTable products={cartProducts} />
       </Container>
-      <div className="container flex flex-col sm:flex-row items-start justify-between py-4 mx-auto max-w-7xl gap-4 ">
+      <div className="site-container flex flex-col items-start justify-between gap-4 py-4 sm:flex-row">
         <Button
           onClick={() => {
             handleClearCart();

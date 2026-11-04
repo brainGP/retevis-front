@@ -31,17 +31,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="mn" className="overflow-x-hidden">
+    <html lang="mn" className="overflow-x-clip">
       <head>
         <meta
           name="google-site-verification"
           content="nWxsj2YVieYZPW8U8CXGojl4mRk5ii9knhDp4KWZiNc"
         />
       </head>
-      <body className="bg-gray/[2%] overflow-x-hidden">
+      <body className="bg-gray/[2%] overflow-x-clip">
         <CartProvider>
           <Providers>
-            <main className="w-full max-w-screen overflow-x-hidden mx-auto">
+            <main className="mx-auto w-full max-w-screen overflow-x-clip">
               {children}
             </main>
             <Toaster />

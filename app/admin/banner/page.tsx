@@ -1,221 +1,109 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+import React, { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { ImageIcon, ImagePlus, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { getBanners } from "@/apis/banner";
-import { toast } from "sonner";
-import { notifyCatalogChanged } from "@/lib/catalogCache";
-import { Button } from "@/components/ui/button";
 import { DELETE } from "@/apis/axios";
 import { isAdmin } from "@/lib/authHelper";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { notifyCatalogChanged } from "@/lib/catalogCache";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Banner } from "@/types/Banner";
 import BannerModal from "../components/bannerModal";
 import ConfirmationDialog from "../components/confirmation";
-import Image from "next/image";
-import { Banner } from "@/types/Banner";
-import { uploadNewBanner } from "@/apis/uploads";
-import Breadcrumb from "@/components/BreadCrumb";
-import Container from "@/components/Container";
-import { useRouter } from "next/navigation";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { uploadNewBanner, uploadUpdatedBanner } from "@/apis/uploads";
 
-const BannerPage = () => {
+export default function BannerPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [bannerToDelete, setBannerToDelete] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const [bannerToDelete, setBannerToDelete] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchBanners = async () => {
-      if (!(await isAdmin())) {
-        router.push("/");
-      } else {
-        try {
-          const bannersData = await getBanners();
-          setBanners(bannersData);
-        } catch (error) {
-          console.error("Error fetching banners:", error);
-          toast.error("Error occurred while fetching banners.");
-        }
-      }
-    };
-    fetchBanners();
-  }, [router]);
-
-  const handleDelete = async () => {
-    if (!bannerToDelete) return;
+  const fetchBanners = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
     try {
-      const response = await DELETE({
-        route: `/api/dashboard/${bannerToDelete}`,
-      });
-
-      if (response.status === 200) {
-        setBanners((prev) =>
-          prev.filter((banner) => banner._id !== bannerToDelete)
-        );
-        notifyCatalogChanged("banners");
-        toast.success("Banner deleted successfully.");
-      }
+      setBanners(await getBanners());
     } catch (error) {
-      console.error("Error deleting banner:", error);
-      toast.error("Failed to delete banner.");
+      const message = error instanceof Error ? error.message : "Баннер татаж чадсангүй.";
+      setLoadError(message);
+      toast.error(message);
     } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void isAdmin().then((allowed) => {
+      if (!active) return;
+      if (!allowed) {
+        toast.error("Админ эрхээр нэвтэрч орно уу.");
+        router.replace("/");
+        return;
+      }
+      setIsAuthorized(true);
+      void fetchBanners();
+    });
+    return () => { active = false; };
+  }, [router, fetchBanners]);
+
+  const saveBanner = async (newBanner: Banner, files: File[]) => {
+    if (!files[0]) throw new Error("Баннерын зураг сонгоно уу.");
+    try {
+      const banner = newBanner._id
+        ? await uploadUpdatedBanner(newBanner._id, files[0])
+        : await uploadNewBanner(files[0]);
+      setBanners((current) => newBanner._id
+        ? current.map((item) => item._id === banner._id ? banner : item)
+        : [banner, ...current]);
+      toast.success(newBanner._id ? "Баннерын зураг шинэчлэгдлээ." : "Баннер амжилттай нэмэгдлээ.");
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : "Баннер хадгалж чадсангүй.");
+    }
+  };
+
+  const deleteBanner = async () => {
+    if (!bannerToDelete || deleting) return;
+    setDeleting(true);
+    try {
+      await DELETE({ route: `/api/dashboard/${encodeURIComponent(bannerToDelete)}` });
+      setBanners((current) => current.filter((banner) => banner._id !== bannerToDelete));
+      notifyCatalogChanged("banners");
+      toast.success("Баннер амжилттай устгалаа.");
       setIsDialogOpen(false);
       setBannerToDelete(null);
-    }
-  };
-
-  const handleAddBanner = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleSaveBanner = async (newBanner: Banner, files: File[]) => {
-    try {
-      if (!files[0]) throw new Error("Зураг сонгоно уу.");
-      const banner = await uploadNewBanner(files[0]);
-      toast.success("New banner added successfully.");
-      setBanners((prev) => [...prev, banner]);
-      setIsModalOpen(false);
     } catch (error) {
-      console.error("Error saving banner:", error);
-      toast.error("An error occurred. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Баннер устгаж чадсангүй.");
+    } finally {
+      setDeleting(false);
     }
   };
-  const handleNavigation = (value: string) => {
-    switch (value) {
-      case "Бүтээгдэхүүн":
-        router.push("/admin");
-        break;
-      case "Хэрэглэгчид":
-        router.push("/admin/users");
-        break;
-      default:
-        break;
-    }
-  };
+
+  if (!isAuthorized) return <div className="h-48 animate-pulse rounded-2xl bg-slate-100" aria-label="Админ эрх шалгаж байна" />;
 
   return (
-    <div className="flex flex-col justify-center items-center w-full top-0 border-b px-4 md:px-6 mb-8 py-4">
-      <Container>
-        <div className="flex-1 w-full">
-          <div className="flex flex-col sm:flex-row  justify-between">
-            <h1 className="font-semibold text-xl mb-4">
-              Админы хэрэглэгчдийг хянах хэсэг
-            </h1>
-            <Button onClick={() => handleAddBanner()} className="max-w-[140px]">
-              Баннер нэмэх
-            </Button>
-          </div>
-          <div className="flex items-center flex-row justify-between gap-4 md:gap-0">
-            <Breadcrumb />
-            <div className="flex gap-4">
-              <Select onValueChange={handleNavigation}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Баннер" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Хэрэглэгчид">Хэрэглэгчид</SelectItem>
-                  <SelectItem value="Хэрэглэгчид">Бүтээгдэхүүн</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      </Container>
+    <div className="space-y-5 sm:space-y-6">
+      <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-800"><ImageIcon className="h-5 w-5" /></span><div><h2 className="text-lg font-semibold text-slate-900">Нүүр хуудасны баннер</h2><p className="mt-1 max-w-xl text-sm text-slate-500">Дэлгүүрийн нүүр хэсэгт харагдах баннерын зургийг эндээс шинэчилнэ.</p></div></div>
+        <Button onClick={() => { setEditingBanner(null); setIsModalOpen(true); }} className="w-full sm:w-auto"><ImagePlus />Баннер нэмэх</Button>
+      </section>
 
-      {isModalOpen && (
-        <BannerModal
-          banner={{ _id: "", image: "" }}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSaveBanner}
-        />
-      )}
-      <Container>
-        <ScrollArea className="w-full overflow-x-auto rounded-md border">
-          <Table>
-            <TableCaption>A list of all banner images.</TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[30px] text-center">#</TableHead>
-                <TableHead className="w-[100px]">Image</TableHead>
-                <TableHead className="w-[100px] text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {banners.length > 0 ? (
-                banners.map((banner, index) => (
-                  <TableRow key={banner._id}>
-                    <TableCell className="text-center font-medium">
-                      {index + 1}.
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center p-4">
-                        <Image
-                          src={banner.image}
-                          alt={`Banner image ${banner._id}`}
-                          width={300}
-                          height={300}
-                          className="rounded-md"
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        className="px-4 py-2 bg-red-500 text-white"
-                        onClick={() => {
-                          setBannerToDelete(banner._id);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        Устгах
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center">
-                    No banners available.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell colSpan={2}></TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"><div><h3 className="font-semibold text-slate-900">Бүх баннер</h3><p className="mt-1 text-sm text-slate-500">{loading ? "Мэдээлэл татаж байна…" : `${banners.length} баннер`}</p></div><Button variant="outline" onClick={() => void fetchBanners()} disabled={loading}><RefreshCw className={loading ? "animate-spin" : ""} />Шинэчлэх</Button></div>
+        {loadError ? <div className="flex flex-col items-center gap-3 px-4 py-12 text-center"><p className="text-sm text-slate-600">{loadError}</p><Button variant="outline" onClick={() => void fetchBanners()}><RefreshCw />Дахин оролдох</Button></div> : loading ? <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 3 }, (_, index) => <div key={index} className="aspect-[16/8] animate-pulse rounded-xl bg-slate-100" />)}</div> : banners.length ? <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">{banners.map((banner, index) => <article key={banner._id} className="overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="relative aspect-[16/8] bg-slate-50"><Image src={banner.image} alt={`Нүүр хуудасны баннер ${index + 1}`} fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw" className="object-contain" /></div><div className="flex items-center justify-between gap-3 border-t border-slate-100 px-3 py-3"><div className="min-w-0"><p className="text-sm font-medium text-slate-800">Баннер {index + 1}</p><p className="truncate text-xs text-slate-500">Нүүр хуудасны зураг</p></div><div className="flex shrink-0 gap-2"><Button type="button" variant="outline" size="sm" aria-label={`Баннер ${index + 1} засах`} onClick={() => { setEditingBanner(banner); setIsModalOpen(true); }}><Pencil />Засах</Button><Button type="button" variant="outline" size="sm" aria-label={`Баннер ${index + 1} устгах`} className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => { setBannerToDelete(banner._id); setIsDialogOpen(true); }}><Trash2 />Устгах</Button></div></div></article>)}</div> : <div className="flex flex-col items-center px-5 py-14 text-center"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500"><ImageIcon className="h-5 w-5" /></span><h3 className="mt-3 font-semibold text-slate-900">Одоогоор баннер алга</h3><p className="mt-1 max-w-sm text-sm text-slate-500">Нүүр хуудсанд харуулах эхний баннераа нэмж эхлээрэй.</p><Button className="mt-4" onClick={() => { setEditingBanner(null); setIsModalOpen(true); }}><ImagePlus />Баннер нэмэх</Button></div>}
+      </section>
 
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </Container>
-
-      <ConfirmationDialog
-        isOpen={isDialogOpen}
-        setIsOpen={setIsDialogOpen}
-        title="Баннер устгах"
-        description="Энэ үйлдлийг буцаах боломжгүй. Та энэ баннерыг устгахдаа итгэлтэй байна уу?"
-        callback={handleDelete}
-        actionLabel="Устгах"
-      />
+      {isModalOpen && <BannerModal banner={editingBanner} onClose={() => { setIsModalOpen(false); setEditingBanner(null); }} onSave={saveBanner} />}
+      <ConfirmationDialog isOpen={isDialogOpen} setIsOpen={(open) => { if (!deleting) setIsDialogOpen(open); }} title="Баннер устгах" description="Энэ баннерыг нүүр хуудаснаас устгахдаа итгэлтэй байна уу? Энэ үйлдлийг буцаах боломжгүй." callback={deleteBanner} actionLabel={deleting ? "Устгаж байна…" : "Устгах"} />
     </div>
   );
-};
-
-export default BannerPage;
+}

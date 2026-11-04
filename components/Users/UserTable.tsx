@@ -1,16 +1,8 @@
 import React from "react";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UserActions } from "./UserActions";
 import { User } from "@/types/Users";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { UserRound } from "lucide-react";
 
 interface UserTableProps {
   user: User[];
@@ -18,67 +10,21 @@ interface UserTableProps {
   onDelete: (id: string) => void;
 }
 
-const UserTable: React.FC<UserTableProps> = ({
-  user = [],
-  onEdit,
-  onDelete,
-}) => {
-  return (
-    <ScrollArea className="w-screen xl:w-full overflow-x-auto rounded-md border">
-      <div className="min-w-[1200px]">
-        <Table>
-          <TableCaption>Бүх жагсаалт.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px] text-center">#</TableHead>
-              <TableHead className="w-[300px]">Username</TableHead>
-              <TableHead className="w-[300px]">Email</TableHead>
-              <TableHead className="w-[300px]">Admin</TableHead>
-              <TableHead className="w-[300px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {user && user.length > 0 ? (
-              user.map((user, index) => (
-                <TableRow key={user._id}>
-                  <TableCell className="text-center font-medium">
-                    {index + 1}.
-                  </TableCell>
-                  <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    {user.isAdmin ? (
-                      <div className="flex w-[150px] items-center justify-center font-semibold border border-green-300 rounded-full py-1 bg-white text-green-400">
-                        Админ
-                      </div>
-                    ) : (
-                      <div className="flex w-[150px] items-center justify-center font-semibold border border-slate-400 rounded-full py-1 bg-white text-slate-600">
-                        Хэрэглэгч
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <UserActions
-                      user={user}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">
-                  No users available.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
-  );
-};
+const UserTable: React.FC<UserTableProps> = ({ user = [], onEdit, onDelete }) => (
+  <div className="w-full overflow-x-auto">
+    <Table className="min-w-[650px]">
+      <TableHeader className="bg-slate-50/80"><TableRow className="hover:bg-transparent"><TableHead className="w-16 text-center">#</TableHead><TableHead>Хэрэглэгч</TableHead><TableHead>Эрхийн түвшин</TableHead><TableHead className="text-right">Үйлдэл</TableHead></TableRow></TableHeader>
+      <TableBody>
+        {user.length ? user.map((item, index) => <TableRow key={item._id}>
+          <TableCell className="text-center text-sm tabular-nums text-slate-500">{index + 1}</TableCell>
+          <TableCell><div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700">{item.username?.trim().charAt(0).toLocaleUpperCase("mn-MN") || "R"}</span><div className="min-w-0"><p className="truncate font-medium text-slate-900">{item.username}</p><p className="truncate text-xs text-slate-500">{item.email}</p></div></div></TableCell>
+          <TableCell><span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${item.isAdmin ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}>{item.isAdmin ? "Админ" : "Хэрэглэгч"}</span></TableCell>
+          <TableCell><div className="flex justify-end"><UserActions user={item} onEdit={onEdit} onDelete={onDelete} /></div></TableCell>
+        </TableRow>) : <TableRow><TableCell colSpan={4} className="h-44"><div className="flex flex-col items-center justify-center gap-2 text-center"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500"><UserRound className="h-5 w-5" /></span><p className="font-medium text-slate-800">Хэрэглэгч олдсонгүй</p><p className="text-sm text-slate-500">Энэ бүртгэлд одоогоор хэрэглэгч алга.</p></div></TableCell></TableRow>}
+      </TableBody>
+    </Table>
+    <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">{user.length.toLocaleString("mn-MN")} хэрэглэгч</p>
+  </div>
+);
 
 export default UserTable;

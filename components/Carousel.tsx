@@ -75,8 +75,9 @@ const CarouselComponent = () => {
             );
           })}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-8 lg:left-16 h-6 w-6 lg:h-8 lg:w-8" />
-        <CarouselNext className="absolute right-8 lg:right-16 h-6 w-6 lg:h-8 lg:w-8" />
+        <CarouselPrevious className="absolute left-8 lg:left-16 h-6 w-6 lg:h-8 lg:w-8 hover:-translate-y-1/2" />
+
+        <CarouselNext className="absolute right-8 lg:right-16 h-6 w-6 lg:h-8 lg:w-8 hover:-translate-y-1/2" />
       </Carousel>
     </div>
   );

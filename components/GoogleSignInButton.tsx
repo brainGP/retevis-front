@@ -66,7 +66,9 @@ export default function GoogleSignInButton({ mode = "login" }: { mode?: "login" 
   const initialize = useCallback(() => {
     if (!clientId || !container.current || !window.google || rendered.current) return false;
     const element = container.current;
-    const width = Math.max(200, Math.min(360, Math.floor(element.getBoundingClientRect().width || 360)));
+    // Match the password-login button's full available width (inside CardContent).
+    // Google Identity Services accepts widths from 200px to 400px.
+    const width = Math.max(200, Math.min(400, Math.floor(element.getBoundingClientRect().width || 400)));
     try {
       window.google.accounts.id.initialize({ client_id: clientId, callback: handleCredential });
       window.google.accounts.id.renderButton(element, { theme: "outline", size: "large", width, text: mode === "link" ? "continue_with" : "signin_with" });
@@ -95,10 +97,10 @@ export default function GoogleSignInButton({ mode = "login" }: { mode?: "login" 
   }, [initialize]);
 
   return (
-    <div className="space-y-2">
+    <div className="w-full space-y-2">
       {clientId ? <>
         <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onReady={() => { initialize(); }} onError={() => setSdkError(true)} />
-        <div ref={container} className="flex min-h-10 justify-center" aria-busy={loading} />
+        <div ref={container} className="flex min-h-11 w-full justify-center overflow-hidden rounded-lg" aria-busy={loading} />
         {loading && <p className="text-center text-sm text-gray-600" role="status">Нэвтэрч байна...</p>}
         {sdkError && <p className="text-center text-xs text-amber-700" role="status">Google товч ачаалсангүй. Интернэт холболтоо шалгаад хуудсыг дахин ачаална уу.</p>}
       </> : <p className="text-center text-xs text-gray-500">Google нэвтрэлт тохируулахад OAuth Client ID шаардлагатай.</p>}

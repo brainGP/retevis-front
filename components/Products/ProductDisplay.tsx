@@ -1,7 +1,6 @@
 "use client";
 
 import React, { ReactNode, useState } from "react";
-import { ScrollArea } from "../ui/scroll-area";
 import ProductGrid from "../ProductGrid";
 import FilterOrder from "../FilterOrder";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -49,7 +48,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 }) => {
   const [sortOrder, setSortOrder] = useState<SortOrder>("lowtohigh");
   const filterKey = fetcherKey.join("\u0000");
-  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+  const { data, isLoading, isError, isFetchNextPageError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryFn: ({ pageParam }) => fetcher(pageParam, sortOrder),
     queryKey: [sortOrder, filterKey, "products"],
     initialPageParam: undefined as string | undefined,
@@ -76,27 +75,28 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
       )}
 
       {isLoading && (
-        <div className="flex justify-center items-start bg-white bg-opacity-50 overflow-hidden">
+        <div className="flex w-full min-w-0 justify-center items-start bg-white bg-opacity-50 overflow-hidden">
           {loader}
         </div>
       )}
-      {isError && !isLoading && (
+      {isError && !data && !isLoading && (
         <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center" role="alert">
           <p>Бүтээгдэхүүний жагсаалтыг татаж чадсангүй.</p>
           <button className="rounded border px-4 py-2 hover:bg-gray/5" onClick={() => refetch()}>Дахин оролдох</button>
         </div>
       )}
       {data && products.length > 0 && !isLoading && (
-        <ScrollArea>
-          <ProductGrid title={title} products={products} />
-        </ScrollArea>
+        <ProductGrid title={title} products={products} />
       )}
       {!products.length && !isLoading && !isError && error}
-      {!isError && hasNextPage && !isLoading && (
+      {data && hasNextPage && !isLoading && (
         <div className="mt-6 flex justify-center">
-          <button className="rounded border px-5 py-2 disabled:opacity-50" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
-            {isFetchingNextPage ? "Ачаалж байна..." : "Илүү бүтээгдэхүүн үзэх"}
-          </button>
+          <div className="flex flex-col items-center gap-3">
+            {isFetchNextPageError && <p className="text-sm text-amber-800" role="alert">Дараагийн барааг татаж чадсангүй. Өмнөх үр дүнгүүд хэвээр үлдлээ.</p>}
+            <button className="rounded-lg border border-slate-300 px-5 py-2 text-sm font-medium transition-colors hover:bg-slate-50 disabled:opacity-50" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+              {isFetchingNextPage ? "Ачаалж байна..." : isFetchNextPageError ? "Дахин оролдох" : "Илүү бүтээгдэхүүн үзэх"}
+            </button>
+          </div>
         </div>
       )}
     </div>

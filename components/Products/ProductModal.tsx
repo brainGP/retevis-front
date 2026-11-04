@@ -1,21 +1,14 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Product } from "@/types/Product";
 import { toast } from "sonner";
 import { Textarea } from "../ui/textarea";
-import { ScrollArea } from "../ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectGroup,
-} from "@/components/ui/select";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { compressImage } from "@/lib/compressImage";
+import { Check, ImagePlus, LoaderCircle, Package2, Radio, X } from "lucide-react";
 
 interface ProductModalProps {
   product: Product;
@@ -23,355 +16,177 @@ interface ProductModalProps {
   onSave: (updatedProduct: Product, files: File[]) => Promise<void>;
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({
-  product,
-  onClose,
-  onSave,
-}) => {
-  const [formData, setFormData] = useState<Product>({
-    ...product,
-    name: product.name || "",
-    model: product.model || "",
-    brand: product.brand || "",
-    type: product.type || "",
-    style: product.style || "",
-    price: product.price || 0,
-    priceN: product.priceN || 0,
-    description: product.description || "",
-    battery: product.battery || "",
-    power: product.power || "",
-    hertz: product.hertz || "",
-    status: product.status || false,
-    size: product.size || "",
-    images: product.images || [],
-    quantity: product.quantity || 0,
-    sort: product.sort || "",
-    rating: product.rating || 0,
-  });
+const fieldClass = "h-10 rounded-lg border-slate-200 bg-white focus-visible:ring-yellow/50";
+const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
 
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave }) => {
+  const [formData, setFormData] = useState<Product>(() => ({
+    ...product,
+    name: product.name || "", model: product.model || "", brand: product.brand || "",
+    type: product.type || "", style: product.style || "", price: product.price ?? 0,
+    priceN: product.priceN ?? 0, description: product.description || "", battery: product.battery || "",
+    power: product.power || "", hertz: product.hertz || "", status: product.status ?? false,
+    size: product.size || "", images: product.images || [], quantity: product.quantity ?? 0,
+    sort: product.sort || "", rating: product.rating ?? 5,
+  }));
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ preview: string; file: File }>>([]);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const previewUrls = useRef(new Set<string>());
+  const closeRef = useRef(onClose);
+  const busyRef = useRef(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const isEditing = Boolean(product._id);
+
+  closeRef.current = onClose;
+  busyRef.current = isSaving || isCompressing;
 
   useEffect(() => {
-    setFormData({
-      ...product,
-      name: product.name || "",
-      model: product.model || "",
-      brand: product.brand || "",
-      type: product.type || "",
-      style: product.style || "",
-      price: product.price || 0,
-      priceN: product.priceN || 0,
-      description: product.description || "",
-      battery: product.battery || "",
-      power: product.power || "",
-      hertz: product.hertz || "",
-      status: product.status || false,
-      size: product.size || "",
-      images: product.images || [],
-      quantity: product.quantity || 0,
-      sort: product.sort || "",
-      rating: product.rating || 0,
-    });
-    setUploadedFiles([]);
-  }, [product]);
+    const oldOverflow = document.body.style.overflow;
+    const urlsToRevoke = previewUrls.current;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busyRef.current) closeRef.current();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = oldOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      urlsToRevoke.forEach((url) => URL.revokeObjectURL(url));
+      urlsToRevoke.clear();
+    };
+  }, []);
 
-  const handleChange = (
-    field: keyof Product,
-    value: string | number | boolean
-  ) => {
-    if (typeof value === "string") {
-      value = value.charAt(0).toUpperCase() + value.slice(1);
-    }
-    setFormData({ ...formData, [field]: value });
-  };
-
-  const handleStatusChange = (value: string) => {
-    setFormData({ ...formData, status: value === "true" });
+  const setField = <K extends keyof Product>(field: K, value: Product[K]) => {
+    setFormData((current) => ({ ...current, [field]: value }));
   };
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const filesArray = Array.from(event.target.files);
-      event.target.value = "";
-      if (uploadedFiles.length + filesArray.length > 8 || formData.images.length + filesArray.length > 12) {
-        toast.error("A product may have at most 12 images and 8 new uploads at a time.");
-        return;
+    const selected = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!selected.length) return;
+    if (uploadedFiles.length + selected.length > 8 || formData.images.length + selected.length > 12) {
+      toast.error("Нийт 12 хүртэл зураг, нэг удаад 8 хүртэл зураг нэмнэ үү.");
+      return;
+    }
+    if (selected.some((file) => file.size > 25 * 1024 * 1024)) {
+      toast.error("Эх зураг 25MB-аас бага байх шаардлагатай.");
+      return;
+    }
+    setIsCompressing(true);
+    try {
+      const additions: Array<{ preview: string; file: File }> = [];
+      for (const original of selected) {
+        const file = await compressImage(original);
+        if (file.size > 5 * 1024 * 1024) {
+          additions.forEach(({ preview }) => URL.revokeObjectURL(preview));
+          toast.error(`${original.name} зураг 5MB-аас их байна. Жижигрүүлж дахин сонгоно уу.`);
+          return;
+        }
+        const preview = URL.createObjectURL(file);
+        previewUrls.current.add(preview);
+        additions.push({ preview, file });
       }
-      setIsCompressing(true);
-      try {
-        const compressedFiles: File[] = [];
-        for (const file of filesArray) compressedFiles.push(await compressImage(file));
-        const filePreviews = compressedFiles.map((file) => ({
-          image: URL.createObjectURL(file),
-        }));
-        setFormData((prev) => ({ ...prev, images: [...prev.images, ...filePreviews] }));
-        setUploadedFiles((prev) => [...prev, ...compressedFiles]);
-      } finally {
-        setIsCompressing(false);
-      }
+      setUploadedFiles((current) => [...current, ...additions]);
+      setFormData((current) => ({ ...current, images: [...current.images, ...additions.map(({ preview }) => ({ image: preview }))] }));
+    } catch {
+      toast.error("Зургийг боловсруулахад алдаа гарлаа.");
+    } finally {
+      setIsCompressing(false);
     }
   };
 
   const removeImage = (index: number) => {
-    const updatedImages = formData.images.filter((_, i) => i !== index);
-    const updatedFiles = uploadedFiles.filter((_, i) => i !== index);
-    setFormData({ ...formData, images: updatedImages });
-    setUploadedFiles(updatedFiles);
+    const image = formData.images[index];
+    if (image?.image.startsWith("blob:")) {
+      URL.revokeObjectURL(image.image);
+      previewUrls.current.delete(image.image);
+      setUploadedFiles((current) => current.filter(({ preview }) => preview !== image.image));
+    }
+    setFormData((current) => ({ ...current, images: current.images.filter((_, i) => i !== index) }));
   };
 
-  const handleSave = async () => {
-    if (!formData.name || !formData.brand || !formData.price) {
-      toast.error("Бүх шаардлагатай талбарыг бөглөнө үү!");
+  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSaving || isCompressing) return;
+    if (!formData.images.length) {
+      toast.error("Бүтээгдэхүүнд дор хаяж нэг зураг нэмнэ үү.");
       return;
-    } else {
-      try {
-        await onSave(formData, uploadedFiles);
-
-        onClose();
-      } catch {
-        toast.error("Хадгалах явцад алдаа гарлаа.");
-      }
+    }
+    setIsSaving(true);
+    try {
+      await onSave(formData, uploadedFiles.map(({ file }) => file));
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Хадгалах явцад алдаа гарлаа. Мэдээллээ шалгаад дахин оролдоно уу.");
+    } finally {
+      setIsSaving(false);
     }
   };
-  const [rating, setRating] = useState(formData.rating);
 
-  const handleRatingChange = (value: number) => {
-    setRating(value);
-    handleChange("rating", value);
-  };
+  const busy = isSaving || isCompressing;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-2xl overflow-hidden">
-        <div className=" pt-6 px-6 flex flex-row justify-between">
-          <h2 className="text-xl font-bold">
-            {product._id ? "Бүтээгдэхүүн өөрчлөх" : "Бүтээгдэхүүн нэмэх"}
-          </h2>
-          <button className=" shadow-none hover:scale-105" onClick={onClose}>
-            <Image src="/icons/xicon.svg" height={24} width={24} alt="Close" />
-          </button>
-        </div>
-        <ScrollArea className="h-[800px] p-6">
-          <div className="space-y-4 mt-4 mx-1">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/50 p-0 backdrop-blur-[2px] sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="product-modal-title" className="flex max-h-[96dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-2xl">
+        <header className="flex items-start justify-between border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-800"><Package2 className="h-5 w-5" /></span>
             <div>
-              <label className="block text-sm font-medium mb-1">Нэр</label>
-              <Input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                className="w-full overflow-hidden"
-                required
-              />
+              <h2 id="product-modal-title" className="text-lg font-semibold text-slate-900 sm:text-xl">{isEditing ? "Бүтээгдэхүүн засах" : "Шинэ бүтээгдэхүүн"}</h2>
+              <p className="mt-0.5 text-sm text-slate-500">Үндсэн мэдээлэл, үнэ болон зургийг бөглөнө үү.</p>
             </div>
+          </div>
+          <button type="button" aria-label="Хаах" disabled={busy} onClick={onClose} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"><X className="h-5 w-5" /></button>
+        </header>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Брэнд</label>
-              <Input
-                type="text"
-                value={formData.brand}
-                onChange={(e) => handleChange("brand", e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Загварын дугаар / Model</label>
-              <Input
-                type="text"
-                value={formData.model || ""}
-                onChange={(e) => handleChange("model", e.target.value)}
-                maxLength={120}
-                placeholder="Жишээ: RT-27"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Үнэлэмж /1-5/
-              </label>
-              <Input
-                type="range"
-                min="1"
-                max="5"
-                step="1"
-                value={rating}
-                onChange={(e) => handleRatingChange(parseInt(e.target.value))}
-                className="w-full"
-              />
-              <div className="mt-2 text-center">{rating}</div>{" "}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Төрөл /гар, суурь станц/
-              </label>
-              <Select
-                value={formData.sort}
-                onValueChange={(value) => handleChange("sort", value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue className="text-white/10" placeholder="сонгох" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="Гар станц">Гар станц</SelectItem>
-                    <SelectItem value="Суурин станц">Суурин станц</SelectItem>
-                    <SelectItem value="Дагалдах хэрэгслүүд">
-                      Дагалдах хэрэгслүүд
-                    </SelectItem>
-                    <SelectItem value="Бусад бараа">Бусад бараа</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Төрөл /UHF, VHF/
-              </label>
-              <Input
-                type="text"
-                value={formData.type}
-                onChange={(e) => handleChange("type", e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Загвар /Өндрийн станц, Суурин станц/
-              </label>
-              <Input
-                type="text"
-                value={formData.style}
-                onChange={(e) => handleChange("style", e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Үнэ /НӨАТ/
-              </label>
-              <Input
-                type="number"
-                placeholder="0"
-                onChange={(e) =>
-                  handleChange("priceN", parseFloat(e.target.value))
-                }
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Үнэ</label>
-              <Input
-                type="number"
-                placeholder="0"
-                onChange={(e) =>
-                  handleChange("price", parseFloat(e.target.value))
-                }
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Төлөв</label>
-              <Select
-                value={formData.status ? "true" : "false"}
-                onValueChange={handleStatusChange}
-              >
-                <SelectTrigger className="w-full border rounded px-3 py-2">
-                  <SelectValue placeholder="Төлөв" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">True</SelectItem>
-                  <SelectItem value="false">False</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Баттэрэй</label>
-              <Input
-                type="string"
-                value={formData.battery}
-                onChange={(e) => handleChange("battery", e.target.value)}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Хүчин чадал
-              </label>
-              <Input
-                type="string"
-                value={formData.power}
-                onChange={(e) => handleChange("power", e.target.value)}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Герц</label>
-              <Input
-                type="string"
-                value={formData.hertz}
-                onChange={(e) => handleChange("hertz", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Хэмжээ</label>
-              <Input
-                type="string"
-                value={formData.size}
-                onChange={(e) => handleChange("size", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Тайлбар</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => handleChange("description", e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium">Зураг</label>
-              <Input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-                multiple
-                onChange={handleImageChange}
-                disabled={isCompressing}
-                className=" border-0 mt-1 px-0 block shadow-none w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-              />
-              <p className="text-xs text-gray-500 mt-1">Large photos are compressed before upload when your browser supports it.</p>
-              <div className="flex space-x-4 mt-4">
-                {formData.images.map((image, index) => (
-                  <div key={index} className="relative">
-                    <Image
-                      src={image.image}
-                      alt="images"
-                      width={100}
-                      height={100}
-                      className="rounded-md"
-                    />
-                    <Button
-                      onClick={() => removeImage(index)}
-                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
-                    >
-                      ×
-                    </Button>
+        <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+              <div className="space-y-6">
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2"><Radio className="h-4 w-4 text-amber-700" /><h3 className="text-sm font-semibold text-slate-900">Бүтээгдэхүүний мэдээлэл</h3></div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="sm:col-span-2"><span className={labelClass}>Нэр <span className="text-red-600">*</span></span><Input value={formData.name} onChange={(e) => setField("name", e.target.value)} maxLength={180} required className={fieldClass} placeholder="Жишээ: Retevis RT-27" /></label>
+                    <label><span className={labelClass}>Брэнд <span className="text-red-600">*</span></span><Input value={formData.brand} onChange={(e) => setField("brand", e.target.value)} maxLength={80} required className={fieldClass} placeholder="Retevis" /></label>
+                    <label><span className={labelClass}>Загварын дугаар</span><Input value={formData.model || ""} onChange={(e) => setField("model", e.target.value)} maxLength={120} className={fieldClass} placeholder="RT-27" /></label>
+                    <label><span className={labelClass}>Ангилал <span className="text-red-600">*</span></span><select value={formData.sort} onChange={(e) => setField("sort", e.target.value)} required className={`${fieldClass} w-full px-3 text-sm`}><option value="" disabled>Ангилал сонгох</option><option>Гар станц</option><option>Суурин станц</option><option>Дагалдах хэрэгслүүд</option><option>Бусад бараа</option></select></label>
+                    <label><span className={labelClass}>Төрөл <span className="text-red-600">*</span></span><Input value={formData.type} onChange={(e) => setField("type", e.target.value)} required className={fieldClass} placeholder="UHF, VHF" /></label>
+                    <label><span className={labelClass}>Загварын төрөл <span className="text-red-600">*</span></span><Input value={formData.style} onChange={(e) => setField("style", e.target.value)} required className={fieldClass} placeholder="Гар станц" /></label>
+                    <label><span className={labelClass}>Төлөв</span><select value={String(formData.status)} onChange={(e) => setField("status", e.target.value === "true")} className={`${fieldClass} w-full px-3 text-sm`}><option value="true">Идэвхтэй</option><option value="false">Идэвхгүй</option></select></label>
+                    <label className="sm:col-span-2"><span className={labelClass}>Тайлбар <span className="text-red-600">*</span></span><Textarea value={formData.description} onChange={(e) => setField("description", e.target.value)} maxLength={10000} required rows={4} className="min-h-24 rounded-lg border-slate-200 focus-visible:ring-yellow/50" placeholder="Бүтээгдэхүүний онцлог, зориулалтыг тайлбарлана уу." /></label>
                   </div>
-                ))}
+                </section>
+
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2"><span className="text-sm font-semibold text-slate-900">Үнэ ба үзүүлэлт</span></div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label><span className={labelClass}>Үнэ (₮) <span className="text-red-600">*</span></span><Input type="number" min="0" step="1" value={formData.price || ""} onChange={(e) => setField("price", Number(e.target.value))} required className={fieldClass} placeholder="0" /></label>
+                    <label><span className={labelClass}>НӨАТ-тай үнэ (₮) <span className="text-red-600">*</span></span><Input type="number" min="0" step="1" value={formData.priceN || ""} onChange={(e) => setField("priceN", Number(e.target.value))} required className={fieldClass} placeholder="0" /></label>
+                    <label><span className={labelClass}>Үлдэгдэл <span className="text-red-600">*</span></span><Input type="number" min="0" step="1" value={formData.quantity ?? 0} onChange={(e) => setField("quantity", Number(e.target.value))} required className={fieldClass} /></label>
+                    <label><span className={labelClass}>Үнэлгээ (1–5) <span className="text-red-600">*</span></span><Input type="number" min="1" max="5" step="1" value={formData.rating || 5} onChange={(e) => setField("rating", Number(e.target.value))} required className={fieldClass} /></label>
+                    <label><span className={labelClass}>Батерей <span className="text-red-600">*</span></span><Input value={formData.battery} onChange={(e) => setField("battery", e.target.value)} required className={fieldClass} placeholder="Жишээ: 2000mAh" /></label>
+                    <label><span className={labelClass}>Чадал <span className="text-red-600">*</span></span><Input value={formData.power} onChange={(e) => setField("power", e.target.value)} required className={fieldClass} placeholder="Жишээ: 5W" /></label>
+                    <label><span className={labelClass}>Давтамж <span className="text-red-600">*</span></span><Input value={formData.hertz} onChange={(e) => setField("hertz", e.target.value)} required className={fieldClass} placeholder="Жишээ: 400–470MHz" /></label>
+                    <label><span className={labelClass}>Хэмжээ</span><Input value={formData.size} onChange={(e) => setField("size", e.target.value)} className={fieldClass} placeholder="Хэмжээс" /></label>
+                  </div>
+                </section>
               </div>
+
+              <aside className="space-y-3 lg:sticky lg:top-0 lg:self-start">
+                <div className="flex items-center justify-between"><div><h3 className="text-sm font-semibold text-slate-900">Бүтээгдэхүүний зураг</h3><p className="mt-0.5 text-xs text-slate-500">12 хүртэл зураг · автоматаар шахна</p></div><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{formData.images.length}/12</span></div>
+                <button type="button" onClick={() => fileInput.current?.click()} disabled={busy || formData.images.length >= 12} className="flex min-h-28 w-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 text-center transition hover:border-amber-500 hover:bg-amber-50/50 disabled:opacity-50"><ImagePlus className="mb-2 h-6 w-6 text-slate-500" /><span className="text-sm font-medium text-slate-800">{isCompressing ? "Зургийг боловсруулж байна…" : "Зураг сонгох"}</span><span className="mt-1 text-xs text-slate-500">JPG, PNG, WebP, GIF, AVIF · 5MB / зураг</span></button>
+                <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple onChange={handleImageChange} className="sr-only" aria-label="Бүтээгдэхүүний зураг сонгох" />
+                {formData.images.length ? <div className="grid grid-cols-3 gap-2">{formData.images.map((image, index) => <div key={`${image.image}-${index}`} className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"><Image src={image.image} alt={`Бүтээгдэхүүний зураг ${index + 1}`} fill unoptimized className="object-contain p-1" /><button type="button" onClick={() => removeImage(index)} aria-label={`${index + 1}-р зургийг устгах`} className="absolute right-1 top-1 rounded-full bg-white/95 p-1 text-slate-700 shadow transition hover:bg-red-50 hover:text-red-700"><X className="h-3.5 w-3.5" /></button>{index === 0 && <span className="absolute bottom-1 left-1 rounded bg-slate-900/75 px-1.5 py-0.5 text-[10px] font-medium text-white">Үндсэн</span>}</div>)}</div> : <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">Эхний зураг бүтээгдэхүүний үндсэн зураг болж харагдана.</p>}
+              </aside>
             </div>
           </div>
-
-          <div className="flex justify-end mt-6 space-x-8">
-            <button className="hover:underline" onClick={onClose}>
-              Болих
-            </button>
-            <Button onClick={handleSave} disabled={isCompressing}>Хадгалах</Button>
-          </div>
-        </ScrollArea>
-      </div>
+          <footer className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row sm:justify-between sm:px-7">
+            <p className="self-center text-xs text-slate-500"><span className="text-red-600">*</span> заавал бөглөнө</p>
+            <div className="flex gap-2"><Button type="button" variant="outline" disabled={busy} onClick={onClose} className="flex-1 sm:flex-none">Болих</Button><Button type="submit" disabled={busy} className="flex-1 sm:min-w-36">{busy ? <><LoaderCircle className="animate-spin" />{isCompressing ? "Зураг боловсруулж байна" : "Хадгалж байна"}</> : <><Check />{isEditing ? "Өөрчлөлт хадгалах" : "Бүтээгдэхүүн нэмэх"}</>}</Button></div>
+          </footer>
+        </form>
+      </section>
     </div>
   );
 };

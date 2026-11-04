@@ -33,10 +33,10 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col gap-16 px-8 xl:px-16 py-8">
+    <div className="site-container flex flex-col gap-12 py-8 sm:gap-16 sm:py-10">
       <div id="map-section" className="flex flex-col gap-4">
         <h1 className="font-medium text-xl md:text-2xl">Газрын зураг</h1>
-        <div className="flex justify-center relative">
+        <div className="relative flex min-h-[280px] justify-center sm:min-h-[380px]">
           <LoadingError isLoading={loading} />
           {isMapInView && (
             <iframe
@@ -47,7 +47,7 @@ const Home = () => {
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              className="rounded-lg shadow-lg"
+              className="absolute inset-0 h-full min-h-[280px] w-full rounded-xl border border-slate-200 shadow-sm sm:min-h-[380px]"
               onLoad={() => setLoading(false)}
               onError={handleError}
             />
@@ -67,26 +67,48 @@ const Home = () => {
 
       <div className="flex flex-col gap-4">
         <h1 className="font-medium text-xl md:text-2xl">Сошиал хуудсууд</h1>
-        <div className="flex flex-col 2xl:flex-row gap-8 items-center 2xl:items-start justify-center 2xl:justify-between">
-          <div className="w-full xl:max-w-3xl">
-            <Image
-              src="/fbpost.png"
-              alt="Facebook Poster"
-              width={700}
-              height={700}
-              className="w-full rounded-lg border b-1"
-              priority={true}
-            />
-          </div>
-          <div className="w-full xl:max-w-3xl">
-            <Image
-              src="/igpost.png"
-              alt="Instagram Poster"
-              width={700}
-              height={700}
-              className="w-full rounded-lg border b-1"
-            />
-          </div>
+        <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 sm:gap-6">
+          <a
+            href="https://www.facebook.com/RetevisMongolia"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Retevis Mongolia Facebook хуудсыг нээх"
+            className="group block w-full overflow-hidden rounded-xl border border-slate-200 bg-white transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+          >
+            <div className="relative aspect-[5/2] w-full bg-slate-50">
+              <Image
+                src="/fbpost.png"
+                alt="Retevis Mongolia-ийн Facebook хуудасны зураг"
+                fill
+                sizes="(max-width: 639px) 100vw, 50vw"
+                className="object-contain transition-transform duration-200 group-hover:scale-[1.01]"
+                priority
+              />
+            </div>
+            <span className="flex min-h-11 items-center justify-between border-t border-slate-100 px-4 text-sm font-medium text-slate-700">
+              Facebook хуудсыг нээх <span aria-hidden="true">↗</span>
+            </span>
+          </a>
+          <a
+            href="https://www.instagram.com/retevis_mongolia/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Retevis Mongolia Instagram хуудсыг нээх"
+            className="group block w-full overflow-hidden rounded-xl border border-slate-200 bg-white transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+          >
+            <div className="relative aspect-[5/2] w-full bg-slate-50">
+              <Image
+                src="/igpost.png"
+                alt="Retevis Mongolia-ийн Instagram хуудасны зураг"
+                fill
+                sizes="(max-width: 639px) 100vw, 50vw"
+                className="object-contain transition-transform duration-200 group-hover:scale-[1.01]"
+              />
+            </div>
+            <span className="flex min-h-11 items-center justify-between border-t border-slate-100 px-4 text-sm font-medium text-slate-700">
+              Instagram хуудсыг нээх <span aria-hidden="true">↗</span>
+            </span>
+          </a>
         </div>
         <div className="flex justify-end flex-row gap-4">
           <span className="text-gray/40">Facebook, Instagram: </span>
