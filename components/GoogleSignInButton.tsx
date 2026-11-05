@@ -54,7 +54,16 @@ export default function GoogleSignInButton({ mode = "login" }: { mode?: "login" 
       } else if (error instanceof AxiosError) {
         const body = error.response?.data as { error?: unknown; message?: unknown } | string | undefined;
         const serverMessage = typeof body === "string" ? body : body?.error ?? body?.message;
-        toast.error(typeof serverMessage === "string" && serverMessage.length <= 220 ? serverMessage : genericMessage);
+        if (
+          mode === "login" &&
+          error.response?.status === 409 &&
+          typeof serverMessage === "string" &&
+          serverMessage.startsWith("An account already uses this email")
+        ) {
+          toast.error("Энэ имэйлээр бүртгэл байна. Нууц үгээрээ нэвтрээд Профайл хэсгээс Google хаягаа холбоно уу.");
+        } else {
+          toast.error(typeof serverMessage === "string" && serverMessage.length <= 220 ? serverMessage : genericMessage);
+        }
       } else {
         toast.error(genericMessage);
       }
