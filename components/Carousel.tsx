@@ -32,6 +32,7 @@ const CarouselComponent = () => {
     data: banners = [],
     isLoading,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ["banners"],
     queryFn: fetchBanners,
@@ -47,7 +48,15 @@ const CarouselComponent = () => {
   }, []);
 
   if (isLoading) return <CarouselSkeleton />;
-  if (isError) return <div className="text-center">Failed to load banners</div>;
+  if (isError) return (
+    <div className="site-container py-5">
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-5 text-center" role="alert">
+        <p className="text-sm text-slate-600">Онцлох мэдээлэл ачаалсангүй.</p>
+        <button type="button" onClick={() => void refetch()} className="mt-2 text-sm font-medium text-amber-800 hover:underline">Дахин ачаалах</button>
+      </div>
+    </div>
+  );
+  if (!banners.length) return null;
 
   return (
     <div className="relative w-full flex justify-center items-start md:items-center overflow-hidden">
@@ -58,15 +67,15 @@ const CarouselComponent = () => {
         onMouseLeave={autoplayPlugin.current.reset}
       >
         <CarouselContent>
-          {banners.map((banner) => {
+          {banners.map((banner, index) => {
             return (
               <CarouselItem key={banner._id}>
                 <div className="relative w-full h-[30vh] sm:h-[40vh] md:h-[60vh]">
                   <Image
                     src={banner.image}
-                    alt={`Banner featuring ${banner._id}`}
+                    alt={`Retevis Mongolia-ийн онцлох мэдээлэл ${index + 1}`}
                     className="object-cover object-center"
-                    priority={true}
+                    priority={index === 0}
                     fill
                     sizes="100vw"
                   />

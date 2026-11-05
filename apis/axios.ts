@@ -26,14 +26,14 @@ client.interceptors.response.use((response) => response, async (error: AxiosErro
   await refreshPromise;
   return client.request(original);
 });
-export type body = { [key: string]: any };
+export type body = object | FormData;
 interface MyRequest {
   route: string;
   token?: string;
 }
 
 interface MyBodyRequest extends MyRequest {
-  body: any;
+  body: body;
 }
 
 export const GET = async ({ route, token }: MyRequest) => {

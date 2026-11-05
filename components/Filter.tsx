@@ -12,7 +12,7 @@ const Filter = () => {
 
   return (
     <aside className="max-w-[250px] md:block hidden min-w-[200px]">
-      <div className=" rounded-lg top-16 sticky bg-white border m-4">
+      <div className="sticky top-16 m-4 rounded-lg border bg-white">
         <div className="flex flex-col justify-center items-center">
           <div className="w-full border-b p-4">
             <h3 className="w-full font-semibold text-lg md:text-xl">

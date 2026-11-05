@@ -1,15 +1,5 @@
-import React from "react";
-import CartClient from "./CartClient";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-const CartPage = () => {
-  return (
-    <>
-      <Header />
-      <CartClient />
-      <Footer />
-    </>
-  );
-};
+import { redirect } from "next/navigation";
 
-export default CartPage;
+export default function CartPage() {
+  redirect("/stations");
+}

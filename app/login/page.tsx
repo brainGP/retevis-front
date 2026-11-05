@@ -20,6 +20,7 @@ const Login = () => {
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: FormEvent) => {
@@ -52,13 +53,17 @@ const Login = () => {
       const requested = new URLSearchParams(window.location.search).get("next") || "";
       router.push(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/");
     } catch (err: unknown) {
-      setTimeout(() => {
-        if (err instanceof AxiosError && err.response) {
-          toast.error("Имэйл эсвэл нууц үг буруу байна.");
-        } else {
-          toast.error("Гэнэтийн алдаа гарлаа. Дахин оролдоно уу");
-        }
-      }, 0);
+      const errorData = err instanceof AxiosError ? err.response?.data as { error?: string; message?: string } | string | undefined : undefined;
+      if (err instanceof AxiosError && err.response?.status === 403 && typeof errorData === "object" && errorData?.error === "EMAIL_NOT_VERIFIED") {
+        setNeedsVerification(true);
+        toast.error(errorData.message || "Имэйл хаягаа баталгаажуулна уу.");
+      } else if (err instanceof AxiosError && err.response?.status === 429) {
+        toast.error("Олон удаа оролдлоо. Түр хүлээгээд дахин нэвтэрнэ үү.");
+      } else if (err instanceof AxiosError && err.response) {
+        toast.error("Имэйл эсвэл нууц үг буруу байна.");
+      } else {
+        toast.error("Гэнэтийн алдаа гарлаа. Дахин оролдоно уу");
+      }
     } finally {
       setLoading(false);
     }
@@ -88,7 +93,7 @@ const Login = () => {
                 autoComplete="email"
                 placeholder="Имэйл хаяг"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setNeedsVerification(false); }}
                 disabled={loading}
                 className="h-11 rounded-lg border-slate-200 bg-slate-100 px-4 shadow-none transition-[background-color,border-color,box-shadow] duration-200 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15"
               />
@@ -120,12 +125,24 @@ const Login = () => {
                 </button>
               </div>
 
+              <div className="flex justify-end">
+                <Link href="/forgot-password" className="text-sm font-medium text-slate-600 transition-colors hover:text-amber-800 hover:underline">
+                  Нууц үгээ мартсан уу?
+                </Link>
+              </div>
+
               <Button type="submit" size="lg" className="h-11 w-full rounded-lg" disabled={loading}>
                 {loading ? "Түр хүлээнэ үү..." : "Нэвтрэх"}
               </Button>
 
               <Separator />
               <GoogleSignInButton />
+
+              {needsVerification && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950" role="alert">
+                  Имэйлээ баталгаажуулах шаардлагатай. <Link href="/register?verify=1" className="font-semibold underline underline-offset-2">Код оруулах</Link>
+                </div>
+              )}
 
               <div className="flex justify-between text-sm text-gray">
                 <p>Бүртгүүлээгүй юу?</p>

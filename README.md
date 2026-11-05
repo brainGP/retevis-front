@@ -52,3 +52,8 @@ Product detail galleries use every stored product image. The selected image fill
 ## Related documentation
 
 See `../retevis-backend/README.md` for API setup, required backend environment variables, password migration behavior, and the catalog API contract.
+
+
+## Account access and recovery
+
+Email/password registration sends an email verification code before creating a usable session. Users can request a fresh code from the registration verification screen. Google Sign-In continues to verify Google credentials on the backend. The login page links to `/forgot-password`; that screen requests a generic password reset response, verifies a six-digit email code, and resets the password. Resetting a password revokes existing sessions, so the user signs in again. Google-only accounts can use profile password setup or the same email recovery flow to create a password. Authentication credentials are held in HttpOnly backend cookies; browser profile data is only a UI hint.

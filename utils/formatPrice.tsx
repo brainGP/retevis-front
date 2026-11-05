@@ -1,8 +1,11 @@
-export const formatPrice = (price: string | number): string => {
-  const priceNumber =
-    typeof price === "string" ? parseInt(price.replace(/[^0-9]/g, "")) : price;
+export const formatPrice = (price: string | number | null | undefined): string => {
+  if (price === null || price === undefined || price === "") return "—";
 
-  if (isNaN(priceNumber)) return price.toString();
+  const priceNumber = typeof price === "string"
+    ? parseInt(price.replace(/[^0-9]/g, ""), 10)
+    : price;
+
+  if (!Number.isFinite(priceNumber)) return "—";
 
   const formatted = new Intl.NumberFormat("en-MN", {
     style: "currency",

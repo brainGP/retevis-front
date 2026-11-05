@@ -11,6 +11,7 @@ const NewProducts = () => {
   const { data, isLoading, error, refetch } = useQuery({
     queryFn: getNewProducts,
     queryKey: ["new", "products"],
+    staleTime: 2 * 60 * 1000,
   });
 
   return (

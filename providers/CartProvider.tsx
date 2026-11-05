@@ -1,6 +1,7 @@
 "use client";
 
 import { CartContextProvider } from "@/hooks/useCarts";
+import { MessengerInquiryProvider } from "@/components/MessengerInquiry";
 import React from "react";
 
 interface CartProviderProps {
@@ -8,7 +9,11 @@ interface CartProviderProps {
 }
 
 const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
-  return <CartContextProvider>{children}</CartContextProvider>;
+  return (
+    <CartContextProvider>
+      <MessengerInquiryProvider>{children}</MessengerInquiryProvider>
+    </CartContextProvider>
+  );
 };
 
 export default CartProvider;

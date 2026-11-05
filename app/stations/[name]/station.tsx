@@ -1,27 +1,22 @@
 "use client";
 import React, { useState, useCallback, useEffect } from "react";
-import Image from "next/image";
 import ProductImage from "@/components/ProductImage";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types/Product";
-import SetQuantity from "./CartQuantity";
 import { useCart } from "@/hooks/useCarts";
-import { useRouter } from "next/navigation";
 import { Rating } from "@mui/material";
 import { formatPrice } from "@/utils/formatPrice";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import StoreIcon from "@/public/icons/store";
 import BatteryIcon from "@/public/icons/battery";
 import ShareProductButton from "@/components/ShareProductButton";
-import { ChevronLeft, ChevronRight, Images, Maximize2, X } from "lucide-react";
+import { useOpenMessengerInquiry } from "@/components/MessengerInquiry";
+import { ChevronLeft, ChevronRight, Images, Maximize2, MessageCircle, X } from "lucide-react";
 
 const StationCard = ({ station, canonicalUrl }: { station: Product; canonicalUrl: string }) => {
-  const router = useRouter();
   const productImages = Array.isArray(station.images) ? station.images : [];
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [isProductInCart, setIsProductInCart] = useState(false);
   const imageSignature = productImages.map(({ image }) => image).join("|");
 
   useEffect(() => {
@@ -50,57 +45,30 @@ const StationCard = ({ station, canonicalUrl }: { station: Product; canonicalUrl
   }, [productImages.length]);
 
   const selectedImage = productImages[selectedImageIndex]?.image || "/noresult.png";
+  const hasStock = station.status && Number(station.quantity) > 0;
+  const isA628 = `${station.name} ${station.model || ""}`.toUpperCase().includes("A-628");
+  const quickSpecs = [
+    { label: "Чадал", value: station.power },
+    { label: "Батарей", value: station.battery },
+    { label: "Давтамж", value: station.hertz },
+    { label: "Загвар", value: station.style },
+  ].filter((spec) => typeof spec.value === "string" && spec.value.trim() && spec.value.trim() !== "-");
 
   const handleImageClick = (index: number) => {
     setSelectedImageIndex(index);
   };
-  const { handleAddProductToCart, cartProducts } = useCart();
-  const [cartProduct, setCartProduct] = useState<Product>({
-    _id: station._id,
-    name: station.name,
-    type: station.type,
-    style: station.style,
-    price: station.price,
-    priceN: station.priceN,
-    battery: station.battery,
-    power: station.power,
-    hertz: station.hertz,
-    status: station.status,
-    size: station.size,
+  const {
+    handleAddProductToCart,
+    cartProducts,
+  } = useCart();
+  const openInquiry = useOpenMessengerInquiry();
+  const existingCartProduct = cartProducts.find((item) => item._id === station._id);
+
+  const cartProduct: Product = {
+    ...station,
     images: productImages,
     quantity: 1,
-    sort: station.sort,
-    brand: station.brand,
-    description: station.description,
-    rating: station.rating,
-  });
-
-  useEffect(() => {
-    setIsProductInCart(false);
-
-    if (cartProducts) {
-      const existingIndex = cartProducts.findIndex(
-        (item) => item._id === station._id
-      );
-      if (existingIndex > -1) {
-        setIsProductInCart(true);
-      }
-    }
-  }, [cartProducts, station._id]);
-
-  const handleQtyIncrease = useCallback(() => {
-    setCartProduct((prev) => {
-      if (prev.quantity >= station.quantity) return prev;
-      return { ...prev, quantity: prev.quantity + 1 };
-    });
-  }, [station.quantity]);
-
-  const handleQtyDecrease = useCallback(() => {
-    setCartProduct((prev) => {
-      if (prev.quantity <= 1) return prev;
-      return { ...prev, quantity: prev.quantity - 1 };
-    });
-  }, []);
+  };
 
   return (
     <div className="mt-6 grid w-full grid-cols-1 gap-6 sm:mt-8 sm:gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start">
@@ -145,12 +113,11 @@ const StationCard = ({ station, canonicalUrl }: { station: Product; canonicalUrl
         <div className="flex flex-col space-y-2 w-full justify-between h-full">
           <ScrollArea className="w-full h-auto lg:h-full lg:overflow-y-auto">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-              <h1 className="min-w-0 text-lg font-bold text-gray sm:text-xl md:text-2xl">
+              <h1 className="min-w-0 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-3xl">
                 {station.name}
               </h1>
               <div className="flex shrink-0 items-center gap-2">
-                <Rating value={station.rating} precision={0.5} readOnly />
-                <span className="text-sm text-gray">({station.rating})</span>
+                {Number(station.rating) > 0 && <><Rating value={station.rating} precision={0.5} readOnly /><span className="text-sm text-gray">({station.rating})</span></>}
                 <ShareProductButton
                   title={`${station.name} | ${station.brand}`}
                   description={String(station.description || `${station.brand} ${station.name} холбооны станц.`)}
@@ -158,19 +125,48 @@ const StationCard = ({ station, canonicalUrl }: { station: Product; canonicalUrl
                 />
               </div>
             </div>
-            <div className="flex items-end gap-2">
-              <span className="text-3xl md:text-4xl font-semibold">
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
                 {formatPrice(station.priceN)}₮
-              </span>
-              <span className="text-gray/40"> (НӨАТ-тэй)</span>
+                </span>
+                <span className="pb-1 text-sm text-slate-400">НӨАТ багтсан</span>
+              </div>
+              {hasStock && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  Бэлэн байгаа
+                </span>
+              )}
             </div>
+            {quickSpecs.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {quickSpecs.map((spec) => (
+                  <div key={spec.label} className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+                    <span className="block text-[11px] font-medium text-slate-500">{spec.label}</span>
+                    <span className="mt-1 block truncate text-sm font-semibold text-slate-800" title={spec.value}>{spec.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {isA628 && (
+              <section className="mt-4 rounded-xl border border-amber-100 bg-amber-50/60 p-3.5" aria-labelledby="a628-use-title">
+                <h2 id="a628-use-title" className="text-sm font-semibold text-slate-900">A-628-ийг ямар ажилд сонгох вэ?</h2>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {["Харуул хамгаалалт", "Барилга, талбайн баг", "Агуулах, ложистик", "Хөдөө ажиллах баг"].map((use) => (
+                    <span key={use} className="rounded-full border border-amber-200/80 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">{use}</span>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-500">Холбооны бодит зай нь орчин, антенн, тохиргооноос хамаарна. Ашиглах давтамж, зөвшөөрлийн нөхцөлийг урьдчилан лавлаарай.</p>
+              </section>
+            )}
             <Separator className="my-4" />
 
             <div className="space-y-4">
               <div className="flex-1 space-y-2">
                 <strong>Тайлбар:</strong>
-                <p className="text-sm break-words whitespace-pre-wrap">
-                  {station.description}
+                <p className="text-sm leading-6 break-words whitespace-pre-wrap text-slate-700">
+                  {station.description || "Бүтээгдэхүүний нэмэлт мэдээллийг биднээс лавлана уу."}
                 </p>
               </div>
               <div className="flex gap-2 items-center">
@@ -193,47 +189,17 @@ const StationCard = ({ station, canonicalUrl }: { station: Product; canonicalUrl
             </div>
           </ScrollArea>
           <Separator />
-          <div className="mt-4">
-            <SetQuantity
-              cartProduct={cartProduct}
-              handleQtyDecrease={handleQtyDecrease}
-              handleQtyIncrease={handleQtyIncrease}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-4 md:gap-x-16">
-            {isProductInCart ? (
-              <Button
-                className="flex text-white px-6 py-3 rounded-md w-full"
-                onClick={() => router.push("/cart")}
-              >
-                <StoreIcon size={24} color="white" />
-                <span>Сагс харах</span>
-              </Button>
-            ) : (
-              <Button
-                className="flex text-white px-6 py-3 rounded-md w-full"
-                onClick={() => handleAddProductToCart(cartProduct)}
-              >
-                <StoreIcon size={24} color="white" />
-                <span>Сагсанд нэмэх</span>
-              </Button>
-            )}
-
-            <Button className=" bg-white border border-gray/30 text-gray hover:bg-gray/5 px-6 py-3 rounded-md gap-4 w-full">
-              <a
-                href="https://m.me/RetevisMongolia"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex gap-2 justify-between"
-              >
-                <Image
-                  src="/icons/msgIcon.svg"
-                  alt="icon"
-                  height={16}
-                  width={16}
-                />
-                <span>Холбогдох</span>
-              </a>
+          <div className="flex w-full">
+            <Button
+              type="button"
+              className="flex min-h-12 w-full items-center rounded-xl bg-[#ffac04] px-6 py-3 font-semibold text-slate-950 shadow-sm transition-colors hover:bg-[#f6a400] focus-visible:ring-amber-600"
+              onClick={() => {
+                if (!existingCartProduct) handleAddProductToCart(cartProduct);
+                openInquiry();
+              }}
+            >
+              <MessageCircle className="h-5 w-5" />
+              <span>{existingCartProduct ? "Сонголтоо харах" : "Үнийн лавлагаа авах"}</span>
             </Button>
           </div>
         </div>

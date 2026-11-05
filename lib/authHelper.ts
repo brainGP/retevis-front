@@ -4,6 +4,7 @@ import { deleteCookie } from "cookies-next/client";
 export interface PublicUser {
   createdAt?: string;
   email: string;
+  emailVerified?: boolean;
   isAdmin: boolean;
   username: string;
   googleLinked?: boolean;
@@ -82,7 +83,7 @@ export const logoutUser = async (): Promise<void> => {
 export const saveUserData = async (user: PublicUser): Promise<boolean> => {
   try {
     clearLegacyAuthCookies();
-    currentUser = { _id: user._id, username: user.username, email: user.email, isAdmin: Boolean(user.isAdmin), createdAt: user.createdAt, googleLinked: Boolean(user.googleLinked) };
+    currentUser = { _id: user._id, username: user.username, email: user.email, emailVerified: user.emailVerified !== false, isAdmin: Boolean(user.isAdmin), createdAt: user.createdAt, googleLinked: Boolean(user.googleLinked) };
     authRevision += 1;
     notifyAuthChanged();
     return true;
