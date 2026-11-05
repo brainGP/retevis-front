@@ -1,43 +1,67 @@
-/* eslint @next/next/no-img-element: off */
-import { getProductByName } from "@/apis/products";
 import { ImageResponse } from "next/og";
-import { notFound } from "next/navigation";
+import OgPreview from "@/components/OgPreview";
+import { cleanProductDescription } from "@/lib/seo";
 
-export const size = {
-  width: 1200,
-  height: 630,
-};
+export const runtime = "edge";
+export const alt = "Retevis Mongolia бүтээгдэхүүний мэдээлэл";
+export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// Image generation
-export default async function og({ params }: { params: { name: string } }) {
-  const name = (await params).name;
-  const station = await getProductByName({ name });
-  if (!station) notFound();
-  const imageUrl = station.images?.[0]?.image;
+type ProductPreview = {
+  name?: string;
+  brand?: string;
+  model?: string;
+  type?: string;
+  sort?: string;
+  description?: string;
+  priceN?: string | number;
+  price?: string | number;
+  status?: boolean;
+  quantity?: number;
+  images?: Array<{ image?: string }>;
+};
+
+async function getProduct(name: string): Promise<ProductPreview | null> {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!backendUrl) return null;
+  try {
+    const url = `${backendUrl.replace(/\/$/, "")}/api/product/find/${encodeURIComponent(name)}`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(7000) });
+    if (!response.ok) return null;
+    return await response.json() as ProductPreview;
+  } catch {
+    return null;
+  }
+}
+
+function safeProductImage(value: string | undefined): string | undefined {
+  try {
+    const image = new URL(value || "");
+    return image.protocol === "https:" && image.hostname === "res.cloudinary.com"
+      ? image.toString()
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export default async function ProductOpenGraphImage({ params }: { params: Promise<{ name: string }> }) {
+  const { name } = await params;
+  const product = await getProduct(name);
+  const price = Number(String(product?.priceN || product?.price || "").replace(/[^0-9.]/g, ""));
+  const priceLabel = Number.isFinite(price) && price > 0
+    ? `${new Intl.NumberFormat("en-MN", { maximumFractionDigits: 0 }).format(price)}₮`
+    : undefined;
 
   return new ImageResponse(
-    (
-      // ImageResponse JSX element
-      <div tw="relative flex w-full h-full flex items-center justify-center">
-        <div tw="absolute flex inset-0">
-          {imageUrl ? (
-            <img tw="flex flex-1" src={imageUrl} alt={station.name} />
-          ) : (
-            <div tw="flex flex-1 bg-slate-800" />
-          )}
-          <div tw="absolute flex inset-0 bg-black bg-opacity-50 z-10" />
-        </div>
-        <div tw="flex flex-col text-gray">
-          <div tw="text-7xl font-bold">{station.name}</div>
-          <div tw="flex mt-6 flex-wrap space-x-10 items-center text-4xl text-gray">
-            {station.description}
-          </div>
-        </div>
-      </div>
-    ),
-    {
-      ...size,
-    }
+    <OgPreview
+      eyebrow={[product?.brand, product?.model].filter(Boolean).join(" · ").slice(0, 30) || "Retevis Mongolia"}
+      title={product?.name || name}
+      description={cleanProductDescription(product?.description, "Холбооны станцын үзүүлэлт, үнэ болон бэлэн байдлыг лавлаарай.")}
+      imageUrl={safeProductImage(product?.images?.[0]?.image)}
+      priceLabel={priceLabel}
+      detailLabel={`${product?.status && Number(product.quantity) > 0 ? "Бэлэн" : "Нөөцийг лавлах"}${product?.type || product?.sort ? ` · ${product.type || product.sort}` : ""}`}
+    />,
+    size,
   );
 }

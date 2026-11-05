@@ -3,7 +3,10 @@ const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 export const siteOrigin = (() => {
   if (!configuredSiteUrl) return "https://www.retevis.mn";
   try {
-    return new URL(configuredSiteUrl).origin;
+    const parsed = new URL(configuredSiteUrl);
+    const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname);
+    if (process.env.NODE_ENV === "production" && isLocalHost) return "https://www.retevis.mn";
+    return parsed.origin;
   } catch {
     return "https://www.retevis.mn";
   }

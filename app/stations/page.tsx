@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import StationsCatalog from "./catalog";
 import { siteOrigin } from "@/lib/seo";
-
-const indexingEnabled = process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview";
+import { publicIndexingEnabled } from "@/lib/indexing";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }): Promise<Metadata> {
   const params = await searchParams;
@@ -19,7 +18,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
       description: "Холбооны радио станц болон дагалдах хэрэгслийг Retevis Mongolia-оос үзээрэй.",
       url: `${siteOrigin}/stations`,
     },
-    robots: { index: indexingEnabled && !hasFilters, follow: true },
+    robots: { index: publicIndexingEnabled && !hasFilters, follow: true },
   };
 }
 

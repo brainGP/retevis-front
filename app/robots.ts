@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
 import { siteOrigin } from "@/lib/seo";
+import { publicIndexingEnabled } from "@/lib/indexing";
 
 export default function robots(): MetadataRoute.Robots {
-  const indexable = process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview";
   return {
-    rules: indexable
-      ? [{ userAgent: "*", allow: "/", disallow: ["/admin", "/api", "/cart", "/login", "/register"] }]
+    rules: publicIndexingEnabled
+      ? [{ userAgent: "*", allow: "/", disallow: ["/admin", "/api"] }]
       : [{ userAgent: "*", disallow: "/" }],
     sitemap: `${siteOrigin}/sitemap.xml`,
     host: siteOrigin,

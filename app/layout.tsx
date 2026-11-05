@@ -4,15 +4,14 @@ import { Toaster } from "@/components/ui/sonner";
 import Providers from "../providers";
 import CartProvider from "@/providers/CartProvider";
 import { absoluteSiteUrl, siteOrigin } from "@/lib/seo";
-
-const indexingEnabled = process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview";
+import { publicIndexingEnabled } from "@/lib/indexing";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
   alternates: { canonical: "/" },
   title: {
-    default: "Retevis",
-    template: `%s | Станцын төрөлжсөн дэлгүүр`,
+    default: "Retevis Mongolia | Холбооны станц, радио хэрэгсэл",
+    template: `%s | Retevis Mongolia`,
   },
   description: "Монголын холбооны радио станц, дагалдах хэрэгслийн төрөлжсөн дэлгүүр.",
   icons: "/Retevis/RMlogo.png",
@@ -22,18 +21,18 @@ export const metadata: Metadata = {
     siteName: "Retevis Mongolia",
     title: "Retevis | Станцын төрөлжсөн дэлгүүр",
     description: "Монголын холбооны радио станц, дагалдах хэрэгслийн төрөлжсөн дэлгүүр.",
-    images: [{ url: absoluteSiteUrl("/Retevis/RMlogo.png"), alt: "Retevis Mongolia" }],
+    images: [{ url: absoluteSiteUrl("/opengraph-image"), width: 1200, height: 630, alt: "Retevis Mongolia-ийн холбооны станц, радио хэрэгслийн каталог" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Retevis | Станцын төрөлжсөн дэлгүүр",
     description: "Монголын холбооны радио станц, дагалдах хэрэгслийн төрөлжсөн дэлгүүр.",
-    images: [absoluteSiteUrl("/Retevis/RMlogo.png")],
+    images: [absoluteSiteUrl("/opengraph-image")],
   },
   robots: {
-    index: indexingEnabled,
-    follow: indexingEnabled,
-    googleBot: { index: indexingEnabled, follow: indexingEnabled, "max-image-preview": "large" },
+    index: publicIndexingEnabled,
+    follow: publicIndexingEnabled,
+    googleBot: { index: publicIndexingEnabled, follow: publicIndexingEnabled, "max-image-preview": "large" },
   },
 };
 

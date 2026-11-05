@@ -7,9 +7,10 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
 import { cleanProductDescription, productCanonicalUrl, siteOrigin, toAbsoluteImageUrl } from "@/lib/seo";
+import { publicIndexingEnabled } from "@/lib/indexing";
+import { formatPrice } from "@/utils/formatPrice";
 
 const getStation = cache((name: string) => getProductByName({ name }));
-const indexingEnabled = process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview";
 
 export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
   const { name } = await params;
@@ -19,11 +20,13 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
   const title = `${station.name} | ${station.brand} холбооны станц`;
   const fallbackDescription = `${station.brand} ${station.name} холбооны станц. ${station.type || station.sort || "Холбооны хэрэгсэл"}.`;
   const description = cleanProductDescription(station.description, fallbackDescription);
+  const price = Number(station.priceN || station.price || 0);
+  const socialDescription = cleanProductDescription(
+    `${price > 0 ? `Үнэ: ${formatPrice(price)} ₮. ` : ""}${description}`,
+    fallbackDescription,
+  );
   const canonical = productCanonicalUrl(station.name);
-  const images = (Array.isArray(station.images) ? station.images : [])
-    .map(({ image }) => toAbsoluteImageUrl(image))
-    .filter((image): image is string => Boolean(image));
-  if (!images.length) images.push(`${siteOrigin}/Retevis/RMlogo.png`);
+  const imageUrl = `${canonical}/opengraph-image`;
   const keywords = [station.name, station.model, station.brand, station.type, station.sort, station.style]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
 
@@ -37,20 +40,20 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
       locale: "mn_MN",
       siteName: "Retevis Mongolia",
       title,
-      description,
+      description: socialDescription,
       url: canonical,
-      images: images.slice(0, 4).map((url) => ({ url, alt: `${station.brand} ${station.name}` })),
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: `${station.brand} ${station.name} · үнэ, мэдээлэл` }],
     },
     twitter: {
       card: "summary_large_image",
       title,
-      description,
-      images: [images[0]],
+      description: socialDescription,
+      images: [imageUrl],
     },
     robots: {
-      index: indexingEnabled,
+      index: publicIndexingEnabled,
       follow: true,
-      googleBot: { index: indexingEnabled, follow: true, "max-image-preview": "large" },
+      googleBot: { index: publicIndexingEnabled, follow: true, "max-image-preview": "large" },
     },
   };
 }

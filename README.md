@@ -11,7 +11,7 @@ Install dependencies with `npm install`. Local development defaults to the backe
 | `NEXT_PUBLIC_BACKEND_URL` | Reachable base URL of the backend API |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Optional public Google Web Client ID; must match backend `GOOGLE_CLIENT_ID` |
 | `NEXT_PUBLIC_SITE_URL` | Canonical public storefront origin used for metadata and sitemap |
-| `RETEVIS_INDEXING` | Enable public indexing only for the real production deployment |
+| `RETEVIS_INDEXING` | Set exactly to `false` to disable indexing; production is indexable by default and Vercel previews are always noindex |
 
 Start the frontend with `npm run dev` and open `http://localhost:3000`. `npm run build` creates the production build. The configured lint script is `npm run lint`.
 
@@ -20,6 +20,7 @@ Start the frontend with `npm run dev` and open `http://localhost:3000`. `npm run
 - `/` storefront home
 - `/stations` catalog; supports `brand`, `type`, and `q` URL parameters
 - `/stations/[name]` product details
+- `/brands/retevis` server-rendered Retevis brand catalog and brand information
 - `/cart`, `/contact`, `/login`, `/register`, and `/profile` (signed-in account settings)
 - `/admin` product, user, and banner management
 
@@ -41,9 +42,9 @@ Browser authentication credentials are backend-set HttpOnly cookies; the in-memo
 
 The account menu links to `/profile`. Users can update their display username and use an emailed one-time code to create or replace their password; email changes are not available. Google account linking requires a recently authenticated session and a verified Google email matching the account email. The API returns only a `googleLinked` status, never the Google subject. GIS button setup retries across script/hydration timing and presents a load error if Google's script is unavailable. Resend credentials are configured only in the backend; see `../retevis-backend/README.md`.
 
-The catalog uses cursor-based pages (24 products initially, up to 48 per request) and loads subsequent pages on demand using normal page scrolling. A failed later page keeps already loaded products visible and offers a retry. Search suggestions are bounded real API results; an empty search restores the normal filtered catalog. Search supports Mongolian/English synonyms, transliteration variants, short prefixes, and a constrained spelling-variant vocabulary. Efficient indexed matching requires running and verifying the explicit backend catalog field/index preparation script before enabling its production flag. See `../SEARCH_ARCHITECTURE.md` and `../PERFORMANCE_ARCHITECTURE.md` for rollout details.
+The catalog uses cursor-based pages (24 products initially, up to 48 per request) and loads subsequent pages on demand using normal page scrolling. A failed later page keeps already loaded products visible and offers a retry. Search suggestions are bounded real API results; an empty search restores the normal filtered catalog. Search supports Mongolian/English radio, handheld/base-station, antenna, headset, battery, charger and Retevis terms, transliteration variants, short prefixes, typo tolerance and price/location filler words. Efficient indexed matching still requires running and verifying the explicit backend catalog field/index preparation script; the live database preview in this workspace could not connect, and no index/backfill change was applied. See `../SEARCH_ARCHITECTURE.md` and `../PERFORMANCE_ARCHITECTURE.md` for rollout details.
 
-Product search/filter pages and admin/private routes are excluded from indexing. Product pages generate a canonical URL, a clean Mongolian description, product-specific Open Graph/Twitter previews from real catalog images, and Product plus Breadcrumb JSON-LD. The share control opens the device's native share sheet where available and otherwise copies the canonical page URL. `NEXT_PUBLIC_SITE_URL` must be the production canonical origin (`https://www.retevis.mn`); production Google indexing remains explicitly controlled by `RETEVIS_INDEXING=true` and is disabled on Vercel previews. Verify rendered HTML, product image URLs, and the deployed robots/sitemap before launch.
+Filtered search/catalog URLs and admin/private routes are excluded from indexing. Product pages generate a canonical URL, a clean Mongolian description, product-specific Open Graph/Twitter previews from real catalog images, and Product plus Breadcrumb JSON-LD. The `/brands/retevis` page uses the live product API and is linked from the Retevis logo. The home page defines the Retevis Mongolia organization and its actual social profiles. Production Google indexing is enabled by default; set `RETEVIS_INDEXING=false` to opt out. Vercel previews remain noindex. `NEXT_PUBLIC_SITE_URL` must be the canonical production origin (`https://www.retevis.mn`). Submit `https://www.retevis.mn/sitemap.xml` in Google Search Console and inspect the home, brand, and product URLs after deployment.
 
 The shared header's upper search/account row scrolls naturally, while one independent sticky navigation row stays fixed at the viewport top. It avoids scroll-triggered height transitions that caused the navigation to jump when the upper row collapsed.
 
@@ -51,7 +52,7 @@ Product detail galleries use every stored product image. The selected image fill
 
 ## Related documentation
 
-See `../retevis-backend/README.md` for API setup, required backend environment variables, password migration behavior, and the catalog API contract.
+See `../retevis-backend/README.md` for API setup, required backend environment variables, password migration behavior, and the catalog API contract. See `../GOOGLE_SEARCH_SETUP.md` for production indexing, Search Console, sitemap, and product structured-data verification.
 
 
 ## Account access and recovery
