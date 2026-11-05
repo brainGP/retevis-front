@@ -48,6 +48,7 @@ function MessengerInquiryDialog({ isOpen, onOpenChange }: { isOpen: boolean; onO
   const pathname = usePathname();
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
+  const [shareFailed, setShareFailed] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -56,18 +57,27 @@ function MessengerInquiryDialog({ isOpen, onOpenChange }: { isOpen: boolean; onO
     if (isOpen && !dialog.open) {
       setCopied(false);
       setCopyFailed(false);
+      setShareFailed(false);
       dialog.showModal();
     }
     if (!isOpen && dialog.open) dialog.close();
   }, [isOpen]);
 
-  const copyMessage = () => {
-    const message = [
+  const buildInquiryMessage = () => [
       "Сайн байна уу, дараах бараануудын үнэ болон бэлэн эсэхийг лавлая:",
       "",
       ...cartProducts.map((product) => {
         const productUrl = new URL(`/stations/${encodeURIComponent(product.name)}`, window.location.origin).toString();
-        return `• ${product.name} — ${product.quantity} ширхэг\n  ${productUrl}`;
+        const unitPrice = Number.isFinite(Number(product.priceN)) && Number(product.priceN) > 0
+          ? `${formatPrice(product.priceN)}₮`
+          : "Үнийг лавлах";
+        return [
+          `• ${product.name}`,
+          `  Брэнд: ${product.brand || "Тодорхойгүй"}`,
+          `  Үнэ: ${unitPrice} / ш`,
+          `  Тоо: ${product.quantity} ширхэг`,
+          `  Холбоос: ${productUrl}`,
+        ].join("\n");
       }),
       "",
       hasUnknownPrice
@@ -76,6 +86,7 @@ function MessengerInquiryDialog({ isOpen, onOpenChange }: { isOpen: boolean; onO
       "Баярлалаа.",
     ].join("\n");
 
+  const copyMessage = (message: string) => {
     void copyText(message).then(
       () => {
         setCopied(true);
@@ -84,6 +95,30 @@ function MessengerInquiryDialog({ isOpen, onOpenChange }: { isOpen: boolean; onO
       () => {
         setCopied(false);
         setCopyFailed(true);
+      },
+    );
+  };
+
+  const shareInquiry = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    const message = buildInquiryMessage();
+    if (typeof navigator.share !== "function" || shareFailed) {
+      setShareFailed(true);
+      copyMessage(message);
+      return;
+    }
+
+    // The Web Share sheet lets the customer choose Messenger (or another app)
+    // and hands it a prefilled message. Messenger does not support silently
+    // sending a message or prefilling a recipient through an m.me URL.
+    event.preventDefault();
+    setCopied(false);
+    setCopyFailed(false);
+    void navigator.share({ title: "Retevis Mongolia – үнийн лавлагаа", text: message }).then(
+      () => setCopied(true),
+      (error: unknown) => {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setShareFailed(true);
+        copyMessage(message);
       },
     );
   };
@@ -124,7 +159,7 @@ function MessengerInquiryDialog({ isOpen, onOpenChange }: { isOpen: boolean; onO
                 <h2 id="inquiry-title" className="text-lg font-semibold sm:text-xl">Сонирхсон бараа</h2>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{cartProducts.length}</span>
               </div>
-              <p id="inquiry-description" className="mt-2 text-sm text-slate-500">Жагсаалтаа шалгаад үнийн лавлагаагаа Messenger-ээр илгээнэ.</p>
+              <p id="inquiry-description" className="mt-2 text-sm text-slate-500">Жагсаалтаа шалгаад бэлэн хүсэлтээ Messenger-ээр хуваалцаарай.</p>
             </div>
             <button type="button" onClick={() => onOpenChange(false)} aria-label="Хаах" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"><X className="h-4 w-4" /></button>
           </header>
@@ -170,14 +205,14 @@ function MessengerInquiryDialog({ isOpen, onOpenChange }: { isOpen: boolean; onO
                   href={MESSENGER_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={copyMessage}
+                  onClick={shareInquiry}
                   className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#ffac04] px-4 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-[#f6a400] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  Мессеж бэлдээд Messenger нээх <ArrowUpRight className="h-4 w-4" />
+                  {shareFailed ? "Messenger чат нээх" : "Messenger-ээр мессежээ бэлдэх"} <ArrowUpRight className="h-4 w-4" />
                 </a>
                 <p className="mt-2 min-h-4 text-center text-xs text-slate-500" aria-live="polite">
-                  {copied ? <span className="inline-flex items-center gap-1 text-emerald-700"><Check className="h-3.5 w-3.5" /> Жагсаалт болон холбоосууд хууллаа. Чатад буулгаад илгээнэ үү.</span> : copyFailed ? "Хуулж чадсангүй. Messenger дээр мессежээ гараар бичнэ үү." : "Мессеж автоматаар илгээгдэхгүй. Нээгдсэн чатад буулгаад шалгаж илгээнэ үү."}
+                  {copied ? <span className="inline-flex items-center gap-1 text-emerald-700"><Check className="h-3.5 w-3.5" /> {shareFailed ? "Бэлэн хүсэлт хуулагдлаа. Messenger чатад буулгаж илгээнэ үү." : "Хуваалцах хүсэлт дууслаа. Сонгосон апп дээр мессежээ шалгана уу."}</span> : copyFailed ? "Хуваалцах боломжгүй байна. Messenger дээр мессежээ гараар бичнэ үү." : "Messenger-ийг сонгоход барааны мэдээлэл, үнэ, тоо болон холбоос бэлэн болно."}
                 </p>
               </footer>
             </>
