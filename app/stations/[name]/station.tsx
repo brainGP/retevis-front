@@ -13,9 +13,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import StoreIcon from "@/public/icons/store";
 import BatteryIcon from "@/public/icons/battery";
+import ShareProductButton from "@/components/ShareProductButton";
 import { ChevronLeft, ChevronRight, Images, Maximize2, X } from "lucide-react";
 
-const StationCard = ({ station }: { station: Product }) => {
+const StationCard = ({ station, canonicalUrl }: { station: Product; canonicalUrl: string }) => {
   const router = useRouter();
   const productImages = Array.isArray(station.images) ? station.images : [];
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -143,13 +144,18 @@ const StationCard = ({ station }: { station: Product }) => {
       <div className="flex w-full min-w-0 justify-center lg:h-[580px]">
         <div className="flex flex-col space-y-2 w-full justify-between h-full">
           <ScrollArea className="w-full h-auto lg:h-full lg:overflow-y-auto">
-            <div className="flex justify-between items-center">
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <h1 className="min-w-0 text-lg font-bold text-gray sm:text-xl md:text-2xl">
                 {station.name}
               </h1>
-              <div className="flex items-center gap-2 p-4">
+              <div className="flex shrink-0 items-center gap-2">
                 <Rating value={station.rating} precision={0.5} readOnly />
                 <span className="text-sm text-gray">({station.rating})</span>
+                <ShareProductButton
+                  title={`${station.name} | ${station.brand}`}
+                  description={String(station.description || `${station.brand} ${station.name} холбооны станц.`)}
+                  url={canonicalUrl}
+                />
               </div>
             </div>
             <div className="flex items-end gap-2">

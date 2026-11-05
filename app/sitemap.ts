@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
+import { productCanonicalUrl, siteOrigin } from "@/lib/seo";
 
 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://retevis.mn").replace(/\/$/, "");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
-    { url: siteUrl, changeFrequency: "daily", priority: 1 },
-    { url: `${siteUrl}/stations`, changeFrequency: "daily", priority: 0.9 },
+    { url: siteOrigin, changeFrequency: "daily", priority: 1 },
+    { url: `${siteOrigin}/stations`, changeFrequency: "daily", priority: 0.9 },
   ];
   if (!backendUrl) return entries;
 
@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
       for (const product of data.products || []) {
         if (!product.name) continue;
-        const url = `${siteUrl}/stations/${encodeURIComponent(product.name)}`;
+        const url = productCanonicalUrl(product.name);
         if (seen.has(url)) continue;
         seen.add(url);
         entries.push({ url, changeFrequency: "weekly", priority: 0.7 });

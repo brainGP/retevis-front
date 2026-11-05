@@ -16,24 +16,24 @@ const Navigation = () => {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/", label: "Нүүр", icon: <Home size={21} />, aria: "Home page" },
+    { href: "/", label: "Нүүр", icon: <Home size={21} />, aria: "Нүүр хуудас" },
     {
       href: "/stations",
       label: "Станц",
       icon: <Smartphone size={21} />,
-      aria: "Stations page",
+      aria: "Станцын бараа",
     },
     {
       href: "/other",
       label: "Бусад бараа",
       icon: <Package size={21} />,
-      aria: "Other products page",
+      aria: "Бусад бараа",
     },
     {
       href: "/contact",
       label: "Холбоо барих",
       icon: <MessageCircleQuestionIcon size={21} />,
-      aria: "Contact page",
+      aria: "Холбоо барих",
     },
   ];
 
@@ -56,20 +56,29 @@ const Navigation = () => {
         ))}
       </div>
 
-      {/* Mobile view */}
-      <div className="w-full flex md:hidden min-h-[68px] border-t border-slate-200/80 bg-white/95 backdrop-blur-xl items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
+      {/* Floating liquid-glass dock for mobile */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 px-3 md:hidden">
+        <div className="pointer-events-auto relative mx-auto flex min-h-[4.25rem] w-full max-w-[27rem] items-center justify-around gap-1 overflow-hidden rounded-[1.8rem] border border-white/80 bg-gradient-to-br from-white/75 via-white/45 to-amber-100/35 px-2 py-1.5 shadow-[0_12px_36px_rgba(15,23,42,0.2),inset_0_1.5px_1px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.5)] backdrop-blur-2xl backdrop-saturate-150 before:pointer-events-none before:absolute before:inset-x-5 before:top-px before:h-px before:bg-gradient-to-r before:from-transparent before:via-white before:to-transparent before:content-['']">
         {navItems.map((item, index) => (
           <Link
             key={index}
             href={item.href}
             aria-label={item.aria}
             aria-current={isActive(item.href) ? "page" : undefined}
-            className={classNames("flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 text-[10px] font-medium transition-colors", isActive(item.href) ? "text-amber-700" : "text-slate-500 hover:text-slate-900")}
+            className={classNames("group relative z-10 flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[9px] font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white/60", isActive(item.href) ? "text-amber-800" : "text-slate-600 hover:text-slate-950 active:scale-95")}
           >
-            <span className={classNames("flex h-8 w-10 items-center justify-center rounded-xl transition-colors", isActive(item.href) ? "bg-amber-50" : "")}>{item.icon}</span>
-            <span className="leading-none">{item.label}</span>
+            <span className={classNames("flex h-7 w-10 items-center justify-center rounded-xl transition-all duration-200", isActive(item.href) ? "bg-white/70 shadow-[0_2px_10px_rgba(245,158,11,0.16),inset_0_1px_1px_rgba(255,255,255,0.95)]" : "group-hover:bg-white/45")}>
+              {React.cloneElement(item.icon, {
+                size: 20,
+                strokeWidth: isActive(item.href) ? 2.25 : 1.8,
+                className: classNames("transition-all duration-200", isActive(item.href) ? "drop-shadow-[0_0_7px_rgba(245,158,11,0.45)]" : ""),
+                "aria-hidden": true,
+              })}
+            </span>
+            <span className="whitespace-nowrap leading-none">{item.label}</span>
           </Link>
         ))}
+        </div>
       </div>
     </nav>
   );

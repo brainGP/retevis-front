@@ -3,9 +3,13 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import Providers from "../providers";
 import CartProvider from "@/providers/CartProvider";
+import { absoluteSiteUrl, siteOrigin } from "@/lib/seo";
+
+const indexingEnabled = process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://retevis.mn"),
+  metadataBase: new URL(siteOrigin),
+  alternates: { canonical: "/" },
   title: {
     default: "Retevis",
     template: `%s | Станцын төрөлжсөн дэлгүүр`,
@@ -18,10 +22,18 @@ export const metadata: Metadata = {
     siteName: "Retevis Mongolia",
     title: "Retevis | Станцын төрөлжсөн дэлгүүр",
     description: "Монголын холбооны радио станц, дагалдах хэрэгслийн төрөлжсөн дэлгүүр.",
+    images: [{ url: absoluteSiteUrl("/Retevis/RMlogo.png"), alt: "Retevis Mongolia" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Retevis | Станцын төрөлжсөн дэлгүүр",
+    description: "Монголын холбооны радио станц, дагалдах хэрэгслийн төрөлжсөн дэлгүүр.",
+    images: [absoluteSiteUrl("/Retevis/RMlogo.png")],
   },
   robots: {
-    index: process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview",
-    follow: process.env.NODE_ENV === "production" && process.env.RETEVIS_INDEXING === "true" && process.env.VERCEL_ENV !== "preview",
+    index: indexingEnabled,
+    follow: indexingEnabled,
+    googleBot: { index: indexingEnabled, follow: indexingEnabled, "max-image-preview": "large" },
   },
 };
 

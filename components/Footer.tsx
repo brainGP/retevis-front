@@ -86,12 +86,17 @@ const Footer: React.FC = () => {
       <div className="w-full border-gray py-4 text-sm text-center ">
         <span className="text-yellow">© {currentYear} Retevis Mongolia</span>
 
+        <nav aria-label="Хууль эрх зүйн мэдээлэл" className="mt-3 flex justify-center gap-4">
+          <Link href="/privacy" className="underline underline-offset-2">Нууцлалын бодлого</Link>
+          <Link href="/terms" className="underline underline-offset-2">Үйлчилгээний нөхцөл</Link>
+        </nav>
+
         <p className="p-4">
           Америк стандартын RETEVIS брэндийн хэт богино долгионы гар болон
           суурин радио станцын төрөлжсөн худалдаа.
         </p>
       </div>
-      <div className="h-[calc(68px+env(safe-area-inset-bottom))] md:h-0" />
+      <div className="h-[calc(6rem+env(safe-area-inset-bottom))] md:h-0" />
     </footer>
   );
 };

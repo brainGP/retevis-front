@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import ProductImage from "@/components/ProductImage";
 import { Input } from "@/components/ui/input";
@@ -20,8 +21,10 @@ const Search = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [popoverPosition, setPopoverPosition] = useState({ top: 120, left: 12, width: 320, maxHeight: 480 });
   const requestId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchBarRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const emptyQuery = !query.trim();
   const recommendations = useQuery({
@@ -41,11 +44,47 @@ const Search = () => {
 
   useEffect(() => {
     if (!isDropdownVisible) return;
+
+    const updatePosition = () => {
+      // Measure the full rounded control, including its search button, not just the text input.
+      const rect = searchBarRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const width = Math.min(rect.width, window.innerWidth - 24);
+      const top = Math.max(12, Math.min(rect.bottom + 8, window.innerHeight - 160));
+      setPopoverPosition({
+        top,
+        left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
+        width,
+        maxHeight: Math.max(80, window.innerHeight - top - 12),
+      });
+    };
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    const resizeObserver = typeof ResizeObserver !== "undefined" && searchBarRef.current
+      ? new ResizeObserver(updatePosition)
+      : null;
+    if (resizeObserver && searchBarRef.current) resizeObserver.observe(searchBarRef.current);
     return () => {
       document.body.style.overflow = previousOverflow;
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+      resizeObserver?.disconnect();
     };
+  }, [isDropdownVisible]);
+
+  useEffect(() => {
+    if (!isDropdownVisible) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsDropdownVisible(false);
+      setActiveIndex(-1);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
   }, [isDropdownVisible]);
 
   const submitSearch = (value: string) => {
@@ -105,10 +144,6 @@ const Search = () => {
     setActiveIndex(-1);
   };
 
-  const handleBlur = () => {
-    window.setTimeout(() => setIsDropdownVisible(false), 180);
-  };
-
   const selectProduct = (product: Product) => {
     setIsDropdownVisible(false);
     router.push(`/stations/${encodeURIComponent(product.name)}`);
@@ -137,15 +172,14 @@ const Search = () => {
   );
 
   return (
-    <div className="relative w-full max-w-2xl text-gray">
-      <div className="flex w-full items-center gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm transition-shadow focus-within:border-amber-300 focus-within:shadow-[0_0_0_3px_rgba(255,172,4,0.12)]">
+    <div className={`relative w-full max-w-2xl text-gray ${isDropdownVisible ? "pointer-events-none z-[102]" : "z-0"}`}>
+      <div ref={searchBarRef} className="relative z-[102] flex w-full pointer-events-auto items-center gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm transition-shadow focus-within:border-amber-300 focus-within:shadow-[0_0_0_3px_rgba(255,172,4,0.12)]">
         <Input
           type="search"
           placeholder="Хайлт хийх..."
           value={query}
           onChange={handleSearch}
           onFocus={() => setIsDropdownVisible(true)}
-          onBlur={handleBlur}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown" && visibleProducts.length) {
               event.preventDefault();
@@ -191,11 +225,23 @@ const Search = () => {
         {query && <button type="button" aria-label="Хайлтыг цэвэрлэх" className="absolute right-[3.5rem] z-10 flex h-8 w-8 items-center justify-center rounded-full text-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900" onClick={() => { setQuery(""); setFilteredProducts([]); setIsDropdownVisible(true); inputRef.current?.focus(); }}>×</button>}
       </div>
 
-      <div
-        id="retevis-search-results"
-        role="listbox"
-        className={`absolute left-0 right-0 z-50 mt-2 max-h-[calc(100dvh-12rem)] overscroll-contain overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl transition-opacity duration-150 md:max-h-[70dvh] ${isDropdownVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
-      >
+      {isDropdownVisible && typeof document !== "undefined" && createPortal(
+        <>
+          <button
+            type="button"
+            aria-label="Хайлтын цонхыг хаах"
+            tabIndex={-1}
+            className="fixed inset-0 z-[100] cursor-default bg-slate-950/25 backdrop-blur-[1px]"
+            onClick={() => { setIsDropdownVisible(false); setActiveIndex(-1); }}
+          />
+          <div
+            id="retevis-search-results"
+            role="listbox"
+            aria-label="Хайлтын санал"
+            style={{ top: popoverPosition.top, left: popoverPosition.left, width: popoverPosition.width, maxHeight: popoverPosition.maxHeight }}
+            className="fixed z-[103] overscroll-contain overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
         {emptyQuery ? (
           <div className="p-3 sm:p-4">
             {recentSearches.length > 0 && (
@@ -227,7 +273,10 @@ const Search = () => {
             {query.trim().length < 2 ? "Хайлт хийхийн тулд дор хаяж 2 тэмдэгт оруулна уу." : "Хайлтад тохирох бараа олдсонгүй."}
           </div>
         )}
-      </div>
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   );
 };
