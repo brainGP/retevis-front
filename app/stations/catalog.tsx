@@ -26,9 +26,9 @@ export default function StationsCatalog() {
   const title = search ? `Хайлтын үр дүн: ${search}` : type ? filterMap[type] : "Бүх бараа";
 
   return (
-    <div className="site-container !px-0 flex flex-col gap-4 py-4 lg:flex-row lg:gap-8">
+    <div className="site-container flex flex-col gap-4 py-4 lg:flex-row lg:gap-8">
       <Filter />
-      <div className="min-w-0 w-full flex-1 px-0 py-2 lg:py-4">
+      <div className="min-w-0 w-full flex-1 py-2 lg:py-4">
         <ProductDisplay title={title} fetcher={fetcher} fetcherKey={[brand, type, search]} loader={<ProductGridSkeleton />} />
       </div>
     </div>
